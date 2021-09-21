@@ -17,7 +17,8 @@ namespace WorkerService1
             Dictionary<string, string> customer = new Dictionary<string, string>
             {
                 { "a" , "f_name"},
-                {"b", "l_name" }
+                {"b", "l_name" },
+                {"d", "id" }
             };
 
             foreach (KeyValuePair<string, string> entry in customer) {
