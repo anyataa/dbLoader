@@ -14,18 +14,27 @@ namespace WorkerService1
 {
     public class Worker : BackgroundService
     {
-        private Customer customer ;
+        private readonly ILogger<Worker> _logger;
+        private readonly Customer customer;
+        private readonly MessageString messageString;
 
         public Worker(ILogger<Worker> logger, IConfiguration configuration)
         {
+            _logger = logger;
             customer = new Customer(logger, configuration);
+            messageString = new MessageString(logger, configuration);
         }
 
         protected override async Task ExecuteAsync(CancellationToken stoppingToken)
         {
-           
-            await customer.mapCustomer();
-
+            int holdNum = 0;
+            //while (true) {
+                //await customer.mapCustomer();
+                //holdNum = holdNum + 1;
+                //_logger.LogInformation($"{holdNum}");
+                //await Task.Delay(1000);
+                await messageString.mapMessageConfig();
+            //}
         }
     }
 }

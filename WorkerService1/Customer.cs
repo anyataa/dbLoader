@@ -21,18 +21,12 @@ namespace WorkerService1
     {
         private readonly ILogger<Worker> _logger;
         private readonly IConfiguration _configuration;
-        OracleConnection con = new OracleConnection();
-        SqlConnection scon = new SqlConnection();
+        private OracleConnection con = new OracleConnection();
+        private SqlConnection scon = new SqlConnection();
         private Config config = new Config();
         private int fetchPerSeconds = 300;
         private string fromTable = "customer";
         private string toTable = "bu_table";
-       
-
-        private int id;
-        private string f_name;
-        private string l_name;
-        private DateTime insert_time;
         
         public Customer(ILogger<Worker> logger, IConfiguration configuration)
         {
@@ -41,16 +35,17 @@ namespace WorkerService1
         }
 
         public async Task mapCustomer() {
+            int lastInsertedId;
            
             con.ConnectionString = _configuration["ConnectionStrings:OracleDBConnection"];
             con.Open();
             scon.ConnectionString = _configuration["ConnectionStrings:SqlServerDBConnection"];
   
-
             string limitData = _configuration["DataConfig:LimitData"];
             OracleCommand cmd = con.CreateCommand();
-            cmd.CommandText = $"select id, f_name, l_name, insert_time  from CUSTOMER fetch first {limitData} rows only";
+            cmd.CommandText = $"select id, f_name, l_name, insert_time  from CUSTOMER fetch first {100} rows only";
             OracleDataReader reader = cmd.ExecuteReader();
+            
             string InsertData = $"insert into {toTable}(BU,created_time,inserted_time,item_id, a,b) values ( @BU2, @createdTime2 , @insertedTime2 , @itemId2, @fName2, @lName2)";
             using (SqlCommand insertCmd = new SqlCommand(InsertData, scon)) {
                 insertCmd.Parameters.Add("@BU2", SqlDbType.VarChar, 50);
@@ -68,12 +63,15 @@ namespace WorkerService1
                     insertCmd.Parameters["@itemId2"].Value = reader.GetInt16(0);
                     insertCmd.Parameters["@fName2"].Value = reader.GetString(1);
                     insertCmd.Parameters["@lName2"].Value = reader.GetString(2);
+                    lastInsertedId = reader.GetInt16(0);
                     insertCmd.ExecuteNonQuery();
-                    _logger.LogInformation("Number of Data fetched : " + id + " " + f_name + " " + l_name + " " + insert_time, DateTime.Now);
+                    _logger.LogInformation($"Last Id : {lastInsertedId} \nDetail of Data fetched ID: {reader.GetInt16(0)} \nFirst Name: {reader.GetString(1)} \nLast Name {reader.GetString(2)}");
                     await Task.Delay(1000);
                 }
                 scon.Close();
+                con.Close();
             }
+        
 
             //while (reader.Read())
             //{
@@ -88,6 +86,6 @@ namespace WorkerService1
             //    await Task.Delay(1000);
             //}
         }
-       
+
     }
 }
