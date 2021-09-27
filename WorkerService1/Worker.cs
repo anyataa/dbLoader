@@ -37,7 +37,7 @@ namespace WorkerService1
                 //_logger.LogInformation($"{holdNum}");
                 
                  transaction.mapMessageConfig();
-                await Task.Delay(1000);
+                await Task.Delay(30*1000);
 
             }
         }

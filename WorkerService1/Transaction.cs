@@ -25,15 +25,17 @@ namespace WorkerService1
         private SqlConnection sqlReaderCon = new SqlConnection();
         private SqlConnection sqlInsertCon = new SqlConnection();
         private Config config = new Config();
-        private string toTable = "MESSAGE_TRANSACTION";
+        private string toTable = "MESSAGE_TRANSACTION2";
         private string configTable = "configuration_database";
         private string fromTable = "TABLE_TRANSACTION2";
         private string bu = "DBLOADER";
-        private string configurationList;
-        private string logMessage;
-        private string insertDataDynamic;
-        private string logDataDynamic;
-        
+
+
+        //Parameter
+        private string paramTable = "param_table";
+        private int currentId = 0;
+        private DateTime current_timestamp;
+        private int paramItemIndex = 0;
 
 
         public Transaction(ILogger<Worker> logger, IConfiguration configuration)
@@ -51,6 +53,21 @@ namespace WorkerService1
             sqlInsertCon.ConnectionString = _configuration["ConnectionStrings:SqlServerDBConnection"];
 
             getOracleDataSource();
+
+        }
+
+        public int getIndexCreatedTime()
+        {
+            int index = 0;
+            for (int i = 0; i < getListSource().ToArray().Length; i++)
+            {
+                if (getListSource()[i] == "CREATED_TIME")
+                {
+                    index = i;
+                }
+
+            };
+            return index;
         }
 
         public async void readConfig(OracleDataReader reader ) 
@@ -76,18 +93,16 @@ namespace WorkerService1
                 {
                     case "STRING":
                         _logger.LogInformation($"String => TYPE = {configReader.GetString(3)}");
-                        //reader.GetString(i);
-                        break;
+                                               break;
 
                     case "DATE":
                         _logger.LogInformation($" Date => TYPE = {configReader.GetString(3)}");
-                        //reader.GetDateTime(i);
+                       
                         break;
 
                     case "INT32":
                         _logger.LogInformation($"Integer => TYPE = {configReader.GetString(3)}");
-                        //reader.GetInt32(i);
-                        break;
+                                               break;
                 }
 
             }
@@ -98,7 +113,7 @@ namespace WorkerService1
       
 
         public  void getOracleDataSource() {
-           
+
             OracleCommand cmd = con.CreateCommand();
             string limitData = _configuration["DataConfig:LimitData"];
             string[] sourceArray = getListSource().ToArray();
@@ -107,6 +122,9 @@ namespace WorkerService1
             //set insert based on configuration 
             string insertParam = "";
             string insertValue = "";
+            string listData = "";
+            string updateLastTimestamp;
+
 
             getListDestination().ForEach(delegate (string item)
                 {
@@ -119,52 +137,28 @@ namespace WorkerService1
             insertValue = insertValue.Substring(0, insertValue.Length - 1);
             _logger.LogInformation(insertValue);
 
-            string insertData = $"INSERT INTO {toTable} ({insertParam}) values ({insertValue})";
-            //using(SqlCommand insertCmd = new SqlCommand(insertParam, sqlInsertCon))
-            //{
-            //    for (int x = 0; x < destinationArray.Length; x++) 
-            //    {
-            //        switch (getListDatatype()[x])
-            //        {
-            //            case "STRING":
-            //                _logger.LogInformation($" {destinationArray[x]} = {getListDatatype()[x]}");
-            //                insertCmd.Parameters.Add($"@{destinationArray}", SqlDbType.VarChar, 50);
-            //                //reader.GetString(i);
-            //                break;
-
-            //            case "DATE":
-            //                _logger.LogInformation($"{destinationArray[x]} = {getListDatatype()[x]}");
-            //                insertCmd.Parameters.Add($"@{destinationArray}", SqlDbType.DateTime);
-                            
-            //                //reader.GetDateTime(i);
-            //                break;
-
-            //            case "INT32":
-            //                _logger.LogInformation($"{destinationArray[x]} = {getListDatatype()[x]}");
-            //                insertCmd.Parameters.Add($"@{destinationArray}", SqlDbType.Int);
-            //                //reader.GetInt32(i);
-            //                break;
-            //        }
-                    
-            //    }
-            //}
-
+       
 
             getListSource().ForEach(delegate (string item)
             {
                 selectDataSource = selectDataSource + item + "," ;
             });
+
             selectDataSource = selectDataSource.Substring(0, selectDataSource.Length - 1);
-            
-            cmd.CommandText = $"select {selectDataSource} from {fromTable} fetch first {limitData} rows only";
+
+            string lastUpdate =  getParam();
+
+            string selectOracleQuery = @$"select {selectDataSource} from {fromTable} 
+                                WHERE CREATED_TIME > TO_TIMESTAMP('{lastUpdate}', 'DD-Mon-RR HH24:MI:SS.FF3')
+                                FETCH NEXT {limitData} ROWS ONLY";
+
+            cmd.CommandText = selectOracleQuery;
+            _logger.LogInformation(selectOracleQuery);
             con.Open();
             OracleDataReader reader = cmd.ExecuteReader();
 
             while (reader.Read())
             {
-                using (SqlCommand insertCmd = new SqlCommand(insertData, sqlInsertCon))
-                {
-                    //Reader can get information
                     for (int i = 0; i < sourceArray.Length; i++)
                     {
 
@@ -172,29 +166,50 @@ namespace WorkerService1
                         {
                             case "STRING":
                                 _logger.LogInformation($"String => TYPE = {reader.GetString(i)}");
-                                insertCmd.Parameters.AddWithValue($"@{destinationArray[i]}", reader.GetString(i));
-                                //reader.GetString(i);
+                                    listData = listData + $"'{reader.GetString(i)}'"+","; 
                                 break;
 
                             case "DATE":
-                                _logger.LogInformation($" Date => TYPE = {reader.GetDateTime(i)}");
-                                insertCmd.Parameters.AddWithValue($"@{destinationArray[i]}", reader.GetDateTime(i));
-                                //reader.GetDateTime(i);
+                                listData = listData + $"CONVERT(date,'{reader.GetString(i)}',111)" + ",";
                                 break;
 
+                            case "DATETIME":
+                                  listData = listData + $"CAST('{reader.GetDateTime(i).ToString("yyyy-MM-dd hh:mm:ss.fff")}' AS datetime2)" + ",";
+                                 break;
+
                             case "INT32":
-                                _logger.LogInformation($"Integer => TYPE = {reader.GetInt32(i)}");
-                                insertCmd.Parameters.AddWithValue($"@{destinationArray[i]}", reader.GetInt32(i));
-                                //reader.GetInt32(i);
+                                listData = listData + $"{reader.GetString(i)}" + ",";
                                 break;
                         }
                     }
+               
+                string insertData = $"INSERT INTO {toTable} ({insertParam+$", INSERTED_TIME"}) values ({listData + $"CONVERT(datetime2,'{DateTime.Now.ToString("yyyy-MM-dd hh:mm:ss.fff")}')"})";
+                SqlCommand insertCmd = new SqlCommand(insertData, sqlInsertCon);
+                StringBuilder errorMessages = new StringBuilder();
+                
+                    try
+                    {
                     sqlInsertCon.Open();
                     insertCmd.ExecuteNonQuery();
                     sqlInsertCon.Close();
-                    //_logger.LogInformation($"{insertData}");
-                }
-                 
+                    updateLastTimestamp = reader.GetDateTime(getIndexCreatedTime()).ToString("yyyy-MM-dd hh:mm:ss.fff");
+                    updateParam(bu, updateLastTimestamp);
+                    listData = "";     
+                    }
+                    catch (SqlException ex)
+                    {
+                        for (int i = 0; i < ex.Errors.Count; i++)
+                        {
+                            errorMessages.Append("Index #" + i + "\n" +
+                                "Message: " + ex.Errors[i].Message + "\n" +
+                                "LineNumber: " + ex.Errors[i].LineNumber + "\n" +
+                                "Source: " + ex.Errors[i].Source + "\n" +
+                                "Procedure: " + ex.Errors[i].Procedure + "\n");
+                        }
+                        _logger.LogInformation(errorMessages.ToString());
+                    }
+
+                    _logger.LogInformation($"{insertData}");        
             }
             con.Close();
         }
@@ -213,7 +228,7 @@ namespace WorkerService1
                 BU, 
                 TABLE_SOURCE,  
                 TABLE_DESTINATION 
-                FROM {configTable} WHERE BU = '{bu}'";
+                FROM {configTable} WHERE BU = '{bu}' ";
 
             SqlDataReader configReader = configCommand.ExecuteReader();
 
@@ -272,7 +287,7 @@ namespace WorkerService1
 
             while (configReader.Read())
             {
-                destination.Add(configReader.GetString(1));
+                destination.Add(configReader.GetString(2));
             }
             sqlReaderCon.Close();
             return destination;
@@ -304,6 +319,70 @@ namespace WorkerService1
             return dataType;
         }
 
+        public void updateParam(string BU, string timeStampParam) {
+            string updateCmdSql = @$"UPDATE param_table 
+                                     SET TIMESTAMP_PARAM = CAST('{timeStampParam}' AS Datetime2)  
+                                     WHERE BU = '{bu}'";
 
+            SqlCommand cmd = new SqlCommand(updateCmdSql,sqlInsertCon);
+            StringBuilder errorMessages = new StringBuilder();
+            _logger.LogInformation($"{updateCmdSql}");
+            try
+            {
+                sqlInsertCon.Open();
+                cmd.ExecuteNonQuery();
+                sqlInsertCon.Close();
+            }
+            catch (SqlException ex)
+            {
+                for (int i = 0; i < ex.Errors.Count; i++)
+                {
+                    errorMessages.Append("Index #" + i + "\n" +
+                        "Message: " + ex.Errors[i].Message + "\n" +
+                        "LineNumber: " + ex.Errors[i].LineNumber + "\n" +
+                        "Source: " + ex.Errors[i].Source + "\n" +
+                        "Procedure: " + ex.Errors[i].Procedure + "\n");
+                }
+                _logger.LogInformation(errorMessages.ToString());
+            }
+           
+        }
+
+        public string getParam() {
+            StringBuilder errorMessages = new StringBuilder();
+            string lastUpdate = "";
+            string getCmdSql = @$"SELECT TIMESTAMP_PARAM
+                               FROM {paramTable}";
+
+            SqlCommand cmd = new SqlCommand(getCmdSql, sqlReaderCon);
+
+            try
+            {
+                sqlReaderCon.Open();
+                SqlDataReader reader = cmd.ExecuteReader();
+
+                while (reader.Read())
+                {
+                    lastUpdate = reader.GetDateTime(0).ToString("dd-MMM-yyyy HH:mm:ss.fff");
+                    _logger.LogInformation($"PARAM : {reader.GetDateTime(0).ToString("dd-MMM-yyyy hh:mm:ss.fff")}");
+                }
+                sqlReaderCon.Close();
+                return lastUpdate;
+            }
+            catch (SqlException ex)
+            {
+                for (int i = 0; i < ex.Errors.Count; i++)
+                {
+                    errorMessages.Append("Index #" + i + "\n" +
+                        "Message: " + ex.Errors[i].Message + "\n" +
+                        "LineNumber: " + ex.Errors[i].LineNumber + "\n" +
+                        "Source: " + ex.Errors[i].Source + "\n" +
+                        "Procedure: " + ex.Errors[i].Procedure + "\n");
+                }
+                _logger.LogInformation(errorMessages.ToString());
+                return "Error";
+            }
+
+        }
     }
 }
