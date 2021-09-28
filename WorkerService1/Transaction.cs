@@ -45,12 +45,21 @@ namespace WorkerService1
            
         }
 
+        private string returnOracleDB()
+        {
+            return _configuration["ConnectionStrings:OracleDBConnection"];
+        }
+        private string returnSqlDB()
+        {
+            return _configuration["ConnectionStrings:SqlServerDBConnection"];
+        }
+
         public async Task mapMessageConfig()
         {
-           
-            con.ConnectionString = _configuration["ConnectionStrings:OracleDBConnection"];
-            sqlReaderCon.ConnectionString = _configuration["ConnectionStrings:SqlServerDBConnection"];
-            sqlInsertCon.ConnectionString = _configuration["ConnectionStrings:SqlServerDBConnection"];
+
+            con.ConnectionString = returnOracleDB();
+            sqlReaderCon.ConnectionString = returnSqlDB();
+            sqlInsertCon.ConnectionString = returnSqlDB();
 
             getOracleDataSource();
 
@@ -165,21 +174,24 @@ namespace WorkerService1
                         switch (getListDatatype()[i])
                         {
                             case "STRING":
-                                _logger.LogInformation($"String => TYPE = {reader.GetString(i)}");
-                                    listData = listData + $"'{reader.GetString(i)}'"+","; 
-                                break;
+                             _logger.LogInformation($"STRING => TYPE = {reader.GetString(i)}");
+                             listData = listData + $"'{reader.GetString(i)}'"+","; 
+                             break;
 
                             case "DATE":
-                                listData = listData + $"CONVERT(date,'{reader.GetString(i)}',111)" + ",";
-                                break;
+                            _logger.LogInformation($"DATE => TYPE = {reader.GetString(i)}");
+                            listData = listData + $"CONVERT(date,'{reader.GetString(i)}',111)" + ",";
+                            break;
 
                             case "DATETIME":
-                                  listData = listData + $"CAST('{reader.GetDateTime(i).ToString("yyyy-MM-dd hh:mm:ss.fff")}' AS datetime2)" + ",";
-                                 break;
+                            _logger.LogInformation($"DATETIME => TYPE = {reader.GetDateTime(i).ToString("yyyy-MM-dd hh:mm:ss.fff")}");
+                            listData = listData + $"CAST('{reader.GetDateTime(i).ToString("yyyy-MM-dd hh:mm:ss.fff")}' AS datetime2)" + ",";
+                            break;
 
                             case "INT32":
-                                listData = listData + $"{reader.GetString(i)}" + ",";
-                                break;
+                            _logger.LogInformation($"INT32 => TYPE = {reader.GetString(i)}");
+                            listData = listData + $"{reader.GetString(i)}" + ",";
+                            break;
                         }
                     }
                
