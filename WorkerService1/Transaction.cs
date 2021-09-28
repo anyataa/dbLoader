@@ -192,7 +192,7 @@ namespace WorkerService1
                     sqlInsertCon.Open();
                     insertCmd.ExecuteNonQuery();
                     sqlInsertCon.Close();
-                    updateLastTimestamp = reader.GetDateTime(getIndexCreatedTime()).ToString("yyyy-MM-dd hh:mm:ss.fff");
+                    updateLastTimestamp = reader.GetDateTime(getIndexCreatedTime()).ToString("yyyy-MM-dd HH:mm:ss.fff");
                     updateParam(bu, updateLastTimestamp);
                     listData = "";     
                     }
