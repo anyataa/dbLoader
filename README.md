@@ -18,7 +18,9 @@ Read more about how to use the DbLoader on  [website](https://solar-taxi-ef2.not
 
 To run locally:  
 **1. Change the oracle db connection to your particular oracle db**
+
 `"ConnectionStrings": {"OracleDBConnection": "Your Oracle Connection Here"}`  
+
 * 2.  Change the sql server connection to your particular oracle db  
 ` "ConnectionStrings": {"SqlServerDBConnection": "Your SQL Server Connection Here" }`
 * 3. Add source table : Oracle
