@@ -17,12 +17,22 @@ This DB Loader worker allows you to map the Oracle Table to SQL Server based on 
 Read more about how to use the DbLoader on  [website](https://solar-taxi-ef2.notion.site/DBLOADER-a7c5cfd9f4c14a0b9e0d144345d372a6) for the documentation and table structure for Parameter Table and Configuration Table.  
 
 To run locally:  
-**1. Start**  
-`npm start`  
-**2. Build for Production**  
-`npm build`  
-**3. Test**   
-`npm test`
+**1. Change the oracle db connection to your particular oracle db**  
+` "ConnectionStrings": {
+    "OracleDBConnection": "Your Oracle Connection Here"
+  }`  
+**2.  Change the sql server connection to your particular oracle db**  
+` "ConnectionStrings": {
+    "SqlServerDBConnection": "Your SQL Server Connection Here"
+  }`
+**3. Add source table : Oracle**   
+`"SourceDB1": "TABLE_TRANSACTION"`
+**4. Add destination table : Sql Server**   
+`"SourceDB2": "TABLE_TRANSACTIONTEST"`
+**5. Total DB and BU**   
+` "TotalDB": 2,
+    "BU1": "DBLOADER",`
+    Please note that total of table you want to load must be the same in Total DB. If you have 2 source table, then TotalDB is 2. The BU1 is a unique key to match the configuration for your source table and destination table. See the reccomended table structure in the documentation for knowing about BU more.
 
 # Features
 * Load data from Oracle to SQL Server
