@@ -1,4 +1,4 @@
-<p align="center">DBLoader - Oracle to SQL Server</p>
+<h1 align="center">DBLoader - Oracle to SQL Server</h1>
 
 
 <p align="center">
