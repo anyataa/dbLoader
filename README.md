@@ -21,13 +21,20 @@ To run locally:
 
 `"ConnectionStrings": {"OracleDBConnection": "Your Oracle Connection Here"}`  
 
-* 2.  Change the sql server connection to your particular oracle db  
+**2.  Change the sql server connection to your particular oracle db**  
+
 ` "ConnectionStrings": {"SqlServerDBConnection": "Your SQL Server Connection Here" }`
-* 3. Add source table : Oracle
+
+**3. Add source table : Oracle**
+
 `"SourceDB1": "TABLE_TRANSACTION"`
-* 4. Add destination table : Sql Server
+
+**4. Add destination table : Sql Server**
+
 `"SourceDB2": "TABLE_TRANSACTIONTEST"`
-* 5. Total DB and BU
+
+**5. Total DB and BU**
+
 ` "TotalDB": 2,"BU1": "DBLOADER",` Please note that total of table you want to load must be the same in Total DB. If you have 2 source table, then TotalDB is 2. The BU1 is a unique key to match the configuration for your source table and destination table. See the reccomended table structure in the documentation for knowing about BU more.
 
 # Features
