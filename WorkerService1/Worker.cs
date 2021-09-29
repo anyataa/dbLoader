@@ -15,29 +15,30 @@ namespace WorkerService1
     public class Worker : BackgroundService
     {
         private readonly ILogger<Worker> _logger;
+        private readonly IConfiguration _configuration;
         private readonly Customer customer;
         private readonly MessageString messageString;
         private readonly Transaction transaction;
 
+
         public Worker(ILogger<Worker> logger, IConfiguration configuration)
         {
             _logger = logger;
-            customer = new Customer(logger, configuration);
-            messageString = new MessageString(logger, configuration);
             transaction = new Transaction(logger, configuration);
+            _configuration = configuration;
         }
 
         protected override async Task ExecuteAsync(CancellationToken stoppingToken)
         {
-            int holdNum = 0;
+            int upatePerSeconds = int.Parse(_configuration["DataConfig:UpdateTimePerSeconds"]);
             while (true)
             {
                 //await customer.mapCustomer();
                 //holdNum = holdNum + 1;
                 //_logger.LogInformation($"{holdNum}");
                 
-                 transaction.mapMessageConfig();
-                await Task.Delay(30*1000);
+                await transaction.mapMessageConfig();
+                await Task.Delay(upatePerSeconds*1000);
 
             }
         }

@@ -13,7 +13,7 @@ using Oracle.ManagedDataAccess.Client;
 using Oracle.ManagedDataAccess.Types;
 using Microsoft.Data.SqlClient;
 using System.Data;
-using WorkerService1.DbConfig;
+
 
 namespace WorkerService1
 {
@@ -35,7 +35,7 @@ namespace WorkerService1
         private string logMessage;
         private string insertDataDynamic;
         private string logDataDynamic;
-        private DatabaseConnection databaseConnection;
+     
 
         public MessageString(ILogger<Worker> logger, IConfiguration configuration)
         {
