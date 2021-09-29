@@ -31,7 +31,7 @@ To run locally:
 
 **4. Add destination table : Sql Server**
 
-`"SourceDB2": "TABLE_TRANSACTIONTEST"`
+`"DestinatitonDB1": "TABLE_TRANSACTION_LOADED"`
 
 **5. Total DB and BU**
 
