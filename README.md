@@ -10,7 +10,7 @@
 
 ## Overview
 
-This DB Loader worker allows you to map the Oracle Table to SQL Server based on the Configuration Table. The data from Oracle Table will not added twice as long as the Oracle Table has Insert_Time that can be used by the Parameter Table as the last point to grab all the data. 
+This DB Loader worker allows you to map the Oracle Table to SQL Server based on the Configuration Table. The data from Oracle Table will not added twice as long as the Oracle Table has Insert_Time that can be used by the Parameter Table as the last point that will be used as a parameter to grab all the data that haven't grabbed previously. 
 
 ## Getting Started
 
