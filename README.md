@@ -17,7 +17,7 @@ This DB Loader worker allows you to map the Oracle Table to SQL Server based on 
 Read more about how to use the DbLoader on  [website](https://solar-taxi-ef2.notion.site/DBLOADER-a7c5cfd9f4c14a0b9e0d144345d372a6) for the documentation and table structure for Parameter Table and Configuration Table.  
 
 To run locally:  
-* 1. Change the oracle db connection to your particular oracle db 
+**1. Change the oracle db connection to your particular oracle db**
 ` "ConnectionStrings": {"OracleDBConnection": "Your Oracle Connection Here"}`  
 * 2.  Change the sql server connection to your particular oracle db  
 ` "ConnectionStrings": {"SqlServerDBConnection": "Your SQL Server Connection Here" }`
