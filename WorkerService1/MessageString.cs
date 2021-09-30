@@ -30,8 +30,6 @@ namespace WorkerService1
         private string configTable = "configApp2";
         private string fromTable = "message_string_a";
         private int fixedLength = 19;
-        private string configurationType = "FixedString";
-        private string configurationList;
         private string logMessage;
         private string insertDataDynamic;
         private string logDataDynamic;

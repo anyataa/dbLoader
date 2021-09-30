@@ -25,18 +25,6 @@ namespace WorkerService1
         private SqlConnection sqlReaderCon = new SqlConnection();
         private SqlConnection sqlInsertCon = new SqlConnection();
         private Config config = new Config();
-        private string toTable = "MESSAGE_TESTING";
-        private string configTable = "configuration_database";
-        private string fromTable = "TABLE_TRANSACTIONTEST";
-        
-
-
-        //Parameter
-        private string paramTable = "param_table";
-        private int currentId = 0;
-        private DateTime current_timestamp;
-        private int paramItemIndex = 0;
-
 
         public Transaction(ILogger<Worker> logger, IConfiguration configuration)
         {
@@ -69,8 +57,7 @@ namespace WorkerService1
         }
 
         private int returnTotalDb() {
-            return int.Parse(_configuration["DataConfig:TotalDB"]); 
-                
+            return int.Parse(_configuration["DataConfig:TotalDB"]);         
         }
 
         public async Task mapMessageConfig()
@@ -83,11 +70,10 @@ namespace WorkerService1
 
             for (int i = 1; i <= returnTotalDb(); i++)
             {
-                //_logger.LogInformation($"Source DB: {_configuration[$"DataConfig:SourceDB{i}"]}");
-                //_logger.LogInformation($"Destination DB: {_configuration[$"DataConfig:DestinationDB{i}"]}");
                 mapOracleData(_configuration[$"DataConfig:SourceDB{i}"], _configuration[$"DataConfig:DestinationDB{i}"], i);
                 _logger.LogInformation($"_____________________________{returnBU(i)}___________________________________");
             }
+
         }
 
         public int getIndexCreatedTime(int numberBU)
@@ -103,48 +89,6 @@ namespace WorkerService1
             };
             return index;
         }
-
-        //public async void readConfig(OracleDataReader reader ) 
-        //{
-        //    //Configuration 
-        //    sqlReaderCon.Open();
-        //    SqlCommand configCommand = sqlReaderCon.CreateCommand();
-        //    configCommand.CommandText = $@"select 
-        //        ID,
-        //        SOURCE,
-        //        DESTINATION,
-        //        DATATYPE,
-        //        BU, 
-        //        TABLE_SOURCE,  
-        //        TABLE_DESTINATION 
-        //        FROM {configTable} WHERE BU = '{returnBU()}'";
-
-        //    SqlDataReader configReader = configCommand.ExecuteReader();
-        //    while (configReader.Read())
-        //    {
-
-        //        switch (configReader.GetString(3))
-        //        {
-        //            case "STRING":
-        //                _logger.LogInformation($"String => TYPE = {configReader.GetString(3)}");
-        //                                       break;
-
-        //            case "DATE":
-        //                _logger.LogInformation($" Date => TYPE = {configReader.GetString(3)}");
-                       
-        //                break;
-
-        //            case "INT32":
-        //                _logger.LogInformation($"Integer => TYPE = {configReader.GetString(3)}");
-        //                                       break;
-        //        }
-
-        //    }
-        //    sqlReaderCon.Close();
-        //    await Task.Delay(1000);
-        //}
-
-      
 
         public  void mapOracleData(string sourceTable, string destinationTable, int numberBU) {
 
@@ -199,23 +143,19 @@ namespace WorkerService1
                         switch (getListDatatype(numberBU)[i])
                         {
                             case "STRING":
-                             _logger.LogInformation($"STRING => TYPE = {reader.GetString(i)}");
                              listData = listData + $"'{reader.GetString(i)}'"+","; 
                              break;
 
                             case "DATE":
-                            _logger.LogInformation($"DATE => TYPE = {reader.GetString(i)}");
                             listData = listData + $"CONVERT(date,'{reader.GetString(i)}',111)" + ",";
                             break;
 
                             case "DATETIME":
-                            _logger.LogInformation($"DATETIME => TYPE = {reader.GetDateTime(i).ToString("yyyy-MM-dd hh:mm:ss.fff")}");
                             listData = listData + $"CAST('{reader.GetDateTime(i).ToString("yyyy-MM-dd hh:mm:ss.fff")}' AS datetime2)" + ",";
                             break;
 
                             case "NUMERIC":
-                            _logger.LogInformation($"NUMERIC => TYPE = {reader.GetString(i)}");
-                            listData = listData + $"{reader.GetString(i)}" + ",";
+                           listData = listData + $"{reader.GetString(i)}" + ",";
                             break;
                         }
                     }
@@ -267,7 +207,7 @@ namespace WorkerService1
                 BU, 
                 TABLE_SOURCE,  
                 TABLE_DESTINATION 
-                FROM {configTable} WHERE BU = '{returnBU(numberBU)}'";
+                FROM {returnConfigTableName()} WHERE BU = '{returnBU(numberBU)}'";
 
             SqlDataReader configReader = configCommand.ExecuteReader();
 
@@ -292,7 +232,7 @@ namespace WorkerService1
                 BU, 
                 TABLE_SOURCE,  
                 TABLE_DESTINATION 
-                FROM {configTable} WHERE BU = '{returnBU(numberBU)}'";
+                FROM {returnConfigTableName()} WHERE BU = '{returnBU(numberBU)}'";
 
             SqlDataReader configReader = configCommand.ExecuteReader();
 
@@ -318,7 +258,7 @@ namespace WorkerService1
                 BU, 
                 TABLE_SOURCE,  
                 TABLE_DESTINATION 
-                FROM {configTable} WHERE BU = '{returnBU(numberBU)}'";
+                FROM {returnConfigTableName()} WHERE BU = '{returnBU(numberBU)}'";
 
             SqlDataReader configReader = configCommand.ExecuteReader();
 
@@ -331,7 +271,8 @@ namespace WorkerService1
         }
 
         public void updateParam(string timeStampParam, int numberBU) {
-            string updateCmdSql = @$"UPDATE param_table 
+            string parameter_table = _configuration["DataConfig:ParamTableName"];
+            string updateCmdSql = @$"UPDATE {parameter_table} 
                                      SET TIMESTAMP_PARAM = CAST('{timeStampParam}' AS Datetime2)  
                                      WHERE BU = '{returnBU(numberBU)}'";
 
@@ -359,11 +300,12 @@ namespace WorkerService1
            
         }
 
-        public string getParam(int numberBU ) {
+        public string getParam(int numberBU) {
+            string parameter_table = _configuration["DataConfig:ParamTableName"];
             StringBuilder errorMessages = new StringBuilder();
             string lastUpdate = "";
-            string getCmdSql = @$"SELECT TIMESTAMP_PARAM
-                               FROM {paramTable}
+            string getCmdSql = @$"SELECT VAL_PARAM01
+                               FROM {parameter_table}
                                WHERE BU = '{returnBU(numberBU)}'";
 
             SqlCommand cmd = new SqlCommand(getCmdSql, sqlReaderCon);
