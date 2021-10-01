@@ -14,6 +14,7 @@ using Oracle.ManagedDataAccess.Types;
 using Microsoft.Data.SqlClient;
 using System.Data;
 
+
 namespace WorkerService1
 {
 
@@ -76,7 +77,7 @@ namespace WorkerService1
             for (int i = 1; i <= returnTotalDb(); i++)
             {
                 mapOracleData(_configuration[$"DataConfig:SourceDB{i}"], _configuration[$"DataConfig:DestinationDB{i}"], i, returnParameterType(i));
-                _logger.LogInformation($"_____________________________{returnBU(i)}___________________________________");
+                _logger.LogInformation(Logging.succesCode ,$"Start processing from BU : {returnBU(i)}");
             }
 
         }
@@ -106,10 +107,7 @@ namespace WorkerService1
             string[] destinationArray =  getListDestination(numberBU).ToArray();
             insertParam = insertParam.Substring(0, insertParam.Length - 1);
             insertValue = insertValue.Substring(0, insertValue.Length - 1);
-            _logger.LogInformation(insertValue);
-
        
-
             getListSource(numberBU).ForEach(delegate (string item)
             {
                 selectDataSource = selectDataSource + item + "," ;
@@ -156,7 +154,7 @@ namespace WorkerService1
             string selectOracleQuery = @$"SELECT {selectDataSource} FROM {sourceTable} WHERE  {parameterCondition} FETCH NEXT {limitData} ROWS ONLY";
 
             cmd.CommandText = selectOracleQuery;
-            _logger.LogInformation(selectOracleQuery);
+            _logger.LogInformation(Logging.sqlCode,selectOracleQuery);
             con.Open();
             OracleDataReader reader = cmd.ExecuteReader();
 
@@ -185,7 +183,7 @@ namespace WorkerService1
                         }
                     }
                
-                string insertData = $"INSERT INTO {destinationTable} ({insertParam+$", INSERTED_TIME"}) values ({listData + $"CONVERT(datetime2,'{DateTime.Now.ToString("yyyy-MM-dd hh:mm:ss.fff")}')"})";
+                string insertData = $"INSERT INTO {destinationTable} ({insertParam+$", INSERTED_TIME"}) VALUES ({listData + $"CONVERT(datetime2,'{DateTime.Now.ToString("yyyy-MM-dd hh:mm:ss.fff")}')"})";
                 SqlCommand insertCmd = new SqlCommand(insertData, sqlInsertCon);
                 StringBuilder errorMessages = new StringBuilder();
                 
@@ -225,11 +223,7 @@ namespace WorkerService1
                             updateParam(lastUpdate, lastUpdateOptional, numberBU, parameter);
                             break;
                     }
-
-                    _logger.LogInformation("__________________________________________________________________");
-                    _logger.LogInformation($"INSERTED AT : {DateTime.Now}");
-                    _logger.LogInformation($"PARAMETER UPDATED : {lastUpdate} | {lastUpdateOptional}");
-
+                    _logger.LogInformation(Logging.succesCode , $"______________________________  INSERTED SUCCESSFULLY  _________________________\nINSERTED AT : {DateTime.Now}\nPARAMETER UPDATED : {lastUpdate} | {lastUpdateOptional}");
                     listData = "";     
                     }
                     catch (SqlException ex)
@@ -242,10 +236,10 @@ namespace WorkerService1
                                 "Source: " + ex.Errors[i].Source + "\n" +
                                 "Procedure: " + ex.Errors[i].Procedure + "\n");
                         }
-                        _logger.LogInformation(errorMessages.ToString());
+                        _logger.LogError(Logging.errorCode ,errorMessages.ToString());
                     }
 
-                    _logger.LogInformation($"{insertData}");        
+                    _logger.LogInformation(Logging.sqlCode ,$"{insertData}");        
             }
             con.Close();
         }
@@ -393,7 +387,7 @@ namespace WorkerService1
                         "Source: " + ex.Errors[i].Source + "\n" +
                         "Procedure: " + ex.Errors[i].Procedure + "\n");
                 }
-                _logger.LogInformation(errorMessages.ToString());
+                _logger.LogWarning(errorMessages.ToString());
             }
            
         }
@@ -447,12 +441,12 @@ namespace WorkerService1
                             break;
 
                         case "ID_ONLY":
-                            lastUpdate.Add(reader.GetString(0));
+                            lastUpdate.Add(reader.GetDecimal(0).ToString());
                             break;
 
                         case "TIMESTAMP_ID":
                             lastUpdate.Add(reader.GetDateTime(0).ToString("dd-MMM-yyyy HH:mm:ss.fff"));
-                            lastUpdate.Add(reader.GetString(1));
+                            lastUpdate.Add(reader.GetDecimal(1).ToString());
                             break;
                         case "TIMESTAMP_NOMINAL":
                             
@@ -461,7 +455,7 @@ namespace WorkerService1
                             break;
 
                         case "ID_NOMINAL":
-                            lastUpdate.Add(reader.GetString(0));
+                            lastUpdate.Add(reader.GetDecimal(0).ToString());
                             lastUpdate.Add(reader.GetString(1));
                             break;
                     }
@@ -480,9 +474,8 @@ namespace WorkerService1
                         "Source: " + ex.Errors[i].Source + "\n" +
                         "Procedure: " + ex.Errors[i].Procedure + "\n");
                 }
-                _logger.LogInformation(errorMessages.ToString());
-                lastUpdate.Add("ERROR");
-                return lastUpdate;
+                _logger.LogError(Logging.criticalCode,errorMessages.ToString());
+                return null;
             }
 
         }

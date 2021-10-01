@@ -33,10 +33,6 @@ namespace WorkerService1
             int upatePerSeconds = int.Parse(_configuration["DataConfig:UpdateTimePerSeconds"]);
             while (true)
             {
-                //await customer.mapCustomer();
-                //holdNum = holdNum + 1;
-                //_logger.LogInformation($"{holdNum}");
-                
                 await transaction.mapMessageConfig();
                 await Task.Delay(upatePerSeconds*1000);
 

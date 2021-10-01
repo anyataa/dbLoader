@@ -1,41 +1,44 @@
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
+using Microsoft.Extensions.Logging;
 using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
-using Serilog;
 using Microsoft.Extensions.Configuration;
-using Oracle.ManagedDataAccess.Client;
-using Oracle.ManagedDataAccess.Types;
 using log4net;
-
+using log4net.Repository;
+using System.IO;
+using System.Reflection;
 
 namespace WorkerService1
 {
     public class Program
         
     {
-        private static readonly log4net.ILog log = log4net.LogManager.GetLogger(System.Reflection.MethodBase.GetCurrentMethod().DeclaringType);
+        
         public static void Main(string[] args)
         {
             CreateHostBuilder(args).Build().Run();
 
-           
+
         }
-        private readonly IConfiguration _configuration;
+    
 
         public static IHostBuilder CreateHostBuilder(string[] args) =>
             Host.CreateDefaultBuilder(args)
                 .UseWindowsService()
-     
+                .ConfigureLogging((context, logging) =>
+                {
+                    logging.ClearProviders();
+                    logging.AddConfiguration(context.Configuration.GetSection("Logging"));
+                    logging.AddDebug();
+                    logging.AddConsole();
+
+                })
+
 
                 .ConfigureServices((hostContext, services) =>
                 {
                     services.AddHostedService<Worker>();
 
-              
-                   
                 });
     }
 }
