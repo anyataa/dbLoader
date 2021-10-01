@@ -60,6 +60,11 @@ namespace WorkerService1
             return int.Parse(_configuration["DataConfig:TotalDB"]);         
         }
 
+        private string returnParameterType(int parameterNumber) 
+        { 
+        return _configuration[$"DataConfig:Parameter{parameterNumber}"];
+        }
+
         public async Task mapMessageConfig()
         {
 
@@ -70,27 +75,15 @@ namespace WorkerService1
 
             for (int i = 1; i <= returnTotalDb(); i++)
             {
-                mapOracleData(_configuration[$"DataConfig:SourceDB{i}"], _configuration[$"DataConfig:DestinationDB{i}"], i);
+                mapOracleData(_configuration[$"DataConfig:SourceDB{i}"], _configuration[$"DataConfig:DestinationDB{i}"], i, returnParameterType(i));
                 _logger.LogInformation($"_____________________________{returnBU(i)}___________________________________");
             }
 
         }
 
-        public int getIndexCreatedTime(int numberBU)
-        {
-            int index = 0;
-            for (int i = 0; i < getListSource(numberBU).ToArray().Length; i++)
-            {
-                if (getListSource(numberBU)[i] == "CREATED_TIME")
-                {
-                    index = i;
-                }
+   
 
-            };
-            return index;
-        }
-
-        public  void mapOracleData(string sourceTable, string destinationTable, int numberBU) {
+        public  void mapOracleData(string sourceTable, string destinationTable, int numberBU, string parameter) {
 
             OracleCommand cmd = con.CreateCommand();
             string limitData = returnLimitData();
@@ -124,11 +117,43 @@ namespace WorkerService1
 
             selectDataSource = selectDataSource.Substring(0, selectDataSource.Length - 1);
 
-            string lastUpdate =  getParam(numberBU);
+            string lastUpdate =  "";
+            string lastUpdateOptional = "";
 
-            string selectOracleQuery = @$"select {selectDataSource} from {sourceTable} 
-                                WHERE CREATED_TIME > TO_TIMESTAMP('{lastUpdate}', 'DD-Mon-RR HH24:MI:SS.FF3')
-                                FETCH NEXT {limitData} ROWS ONLY";
+            string parameterCondition = "";
+
+            switch (parameter)
+            {
+                case "TIMESTAMP_ONLY":
+                    lastUpdate = getParam(numberBU, parameter)[0];
+                    parameterCondition = $"CREATED_TIME > TO_TIMESTAMP('{lastUpdate}', 'DD-Mon-RR HH24:MI:SS.FF3')";
+                    break;
+
+                case "ID_ONLY":
+                    lastUpdate = getParam(numberBU, parameter)[0];
+                    parameterCondition = $"ID > {lastUpdate}";
+                    break;
+
+                case "TIMESTAMP_ID":
+                    lastUpdate = getParam(numberBU, parameter)[0];
+                    lastUpdateOptional = getParam(numberBU, parameter)[1];
+                    parameterCondition = $"CREATED_TIME > TO_TIMESTAMP('{lastUpdate}', 'DD-Mon-RR HH24:MI:SS.FF3') AND ID > {lastUpdateOptional} ";
+                    break;
+
+                case "TIMESTAMP_NOMINAL":
+                    lastUpdate = getParam(numberBU, parameter)[0];
+                    lastUpdateOptional = getParam(numberBU, parameter)[1];
+                    parameterCondition = $"CREATED_TIME > TO_TIMESTAMP('{lastUpdate}', 'DD-Mon-RR HH24:MI:SS.FF3') AND NOMINAL_COLUMN > {lastUpdateOptional} ";
+                    break;
+
+                case "ID_NOMINAL":
+                    lastUpdate = getParam(numberBU, parameter)[0];
+                    lastUpdateOptional = getParam(numberBU, parameter)[1];
+                    parameterCondition = $"ID > {lastUpdate} AND NOMINAL_COLUMN > {lastUpdateOptional}";
+                    break;
+            }
+            
+            string selectOracleQuery = @$"SELECT {selectDataSource} FROM {sourceTable} WHERE  {parameterCondition} FETCH NEXT {limitData} ROWS ONLY";
 
             cmd.CommandText = selectOracleQuery;
             _logger.LogInformation(selectOracleQuery);
@@ -169,8 +194,42 @@ namespace WorkerService1
                     sqlInsertCon.Open();
                     insertCmd.ExecuteNonQuery();
                     sqlInsertCon.Close();
-                    updateLastTimestamp = reader.GetDateTime(getIndexCreatedTime(numberBU)).ToString("yyyy-MM-dd HH:mm:ss.fff");
-                    updateParam(updateLastTimestamp, numberBU);
+
+                    switch (parameter)
+                    {
+                        case "TIMESTAMP_ONLY":
+                            lastUpdate = reader.GetDateTime(getIndexFor(numberBU, "CREATED_TIME")).ToString("yyyy-MM-dd HH:mm:ss.fff");
+                            updateParam(lastUpdate,"", numberBU, parameter);
+                            break;
+
+                        case "ID_ONLY":
+                            lastUpdate = reader.GetString(getIndexFor(numberBU, "ID"));
+                            updateParam(lastUpdate, "", numberBU, parameter);
+                            break;
+
+                        case "TIMESTAMP_ID":
+                            lastUpdate = reader.GetDateTime(getIndexFor(numberBU, "CREATED_TIME")).ToString("yyyy-MM-dd HH:mm:ss.fff");
+                            lastUpdateOptional = reader.GetString(getIndexFor(numberBU, "ID"));
+                            updateParam(lastUpdate, lastUpdateOptional, numberBU, parameter);
+                            break;
+
+                        case "TIMESTAMP_NOMINAL":
+                            lastUpdate = reader.GetDateTime(getIndexFor(numberBU, "CREATED_TIME")).ToString("yyyy-MM-dd HH:mm:ss.fff");
+                            lastUpdateOptional = reader.GetString(getIndexFor(numberBU, "NOMINAL"));
+                            updateParam(lastUpdate, lastUpdateOptional, numberBU, parameter);
+                            break;
+
+                        case "ID_NOMINAL":
+                            lastUpdate = reader.GetString(getIndexFor(numberBU, "ID"));
+                            lastUpdateOptional = reader.GetString(getIndexFor(numberBU, "NOMINAL"));
+                            updateParam(lastUpdate, lastUpdateOptional, numberBU, parameter);
+                            break;
+                    }
+
+                    _logger.LogInformation("__________________________________________________________________");
+                    _logger.LogInformation($"INSERTED AT : {DateTime.Now}");
+                    _logger.LogInformation($"PARAMETER UPDATED : {lastUpdate} | {lastUpdateOptional}");
+
                     listData = "";     
                     }
                     catch (SqlException ex)
@@ -191,7 +250,19 @@ namespace WorkerService1
             con.Close();
         }
 
-     
+        public int getIndexFor(int numberBU, string columnParam)
+        {
+            int index = 0;
+            for (int i = 0; i < getListSource(numberBU).ToArray().Length; i++)
+            {
+                if (getListSource(numberBU)[i] == columnParam)
+                {
+                    index = i;
+                }
+
+            };
+            return index;
+        }
 
         public List<string> getListSource(int numberBU)
         {
@@ -270,15 +341,42 @@ namespace WorkerService1
             return dataType;
         }
 
-        public void updateParam(string timeStampParam, int numberBU) {
+        public void updateParam(string paramValue, string paramValueOptional, int numberBU, string parameter) {
             string parameter_table = _configuration["DataConfig:ParamTableName"];
+
+            string setParameter = "";
+
+            switch (parameter) 
+            {   
+                case "TIMESTAMP_ONLY":
+                    setParameter = $"SET VAL_PARAM01 = CAST('{paramValue}' AS Datetime2)";
+                    break;
+
+                case "ID_ONLY":
+                    setParameter = $"SET VAL_PARAM02 = {paramValue}";
+                    break;
+
+                case "TIMESTAMP_ID":
+                    setParameter = $"SET VAL_PARAM01 = CAST('{paramValue}' AS Datetime2) , VAL_PARAM02 = {paramValueOptional}";
+                    break;
+
+                case "TIMESTAMP_NOMINAL":
+                    setParameter = $"SET VAL_PARAM01 = CAST('{paramValue}' AS Datetime2) , VAL_PARAM03 = {paramValueOptional}";
+                    break;
+
+                case "ID_NOMINAL":
+                    setParameter = $"SET VAL_PARAM02 = {paramValue}, VAL_PARAM03 = {paramValueOptional}";
+                    break;
+            }
+            
+
             string updateCmdSql = @$"UPDATE {parameter_table} 
-                                     SET TIMESTAMP_PARAM = CAST('{timeStampParam}' AS Datetime2)  
-                                     WHERE BU = '{returnBU(numberBU)}'";
+            {setParameter}  
+            WHERE BU = '{returnBU(numberBU)}'";
 
             SqlCommand cmd = new SqlCommand(updateCmdSql,sqlInsertCon);
             StringBuilder errorMessages = new StringBuilder();
-            _logger.LogInformation($"{updateCmdSql}");
+            //_logger.LogInformation($"{updateCmdSql}");
             try
             {
                 sqlInsertCon.Open();
@@ -300,11 +398,35 @@ namespace WorkerService1
            
         }
 
-        public string getParam(int numberBU) {
+        public List<string> getParam(int numberBU, string parameter) {
             string parameter_table = _configuration["DataConfig:ParamTableName"];
             StringBuilder errorMessages = new StringBuilder();
-            string lastUpdate = "";
-            string getCmdSql = @$"SELECT VAL_PARAM01
+            //string lastUpdate = "";
+            string setParameter = "";
+            List<string> lastUpdate = new List<string>();
+
+            switch (parameter) {
+                case "TIMESTAMP_ONLY":
+                    setParameter = " VAL_PARAM01";
+                    break;
+
+                case "ID_ONLY":
+                    setParameter = $"VAL_PARAM02";
+                    break;
+
+                case "TIMESTAMP_ID":
+                    setParameter = $"VAL_PARAM01, VAL_PARAM02";
+                    break;
+                case "TIMESTAMP_NOMINAL":
+                    setParameter = $"VAL_PARAM01, VAL_PARAM03";
+                    break;
+
+                case "ID_NOMINAL":
+                    setParameter = $"VAL_PARAM02, VAL_PARAM03";
+                    break;
+            }
+
+            string getCmdSql = @$"SELECT {setParameter}
                                FROM {parameter_table}
                                WHERE BU = '{returnBU(numberBU)}'";
 
@@ -317,8 +439,33 @@ namespace WorkerService1
 
                 while (reader.Read())
                 {
-                    lastUpdate = reader.GetDateTime(0).ToString("dd-MMM-yyyy HH:mm:ss.fff");
-                    _logger.LogInformation($"PARAM : {reader.GetDateTime(0).ToString("dd-MMM-yyyy hh:mm:ss.fff")}");
+                    switch (parameter)
+                    {
+                        case "TIMESTAMP_ONLY":
+                            lastUpdate.Add(reader.GetDateTime(0).ToString("dd-MMM-yyyy HH:mm:ss.fff"));
+                            //_logger.LogInformation($"PARAM TIMESTAMP_ONLY : {reader.GetDateTime(0).ToString("dd-MMM-yyyy hh:mm:ss.fff")}");
+                            break;
+
+                        case "ID_ONLY":
+                            lastUpdate.Add(reader.GetString(0));
+                            break;
+
+                        case "TIMESTAMP_ID":
+                            lastUpdate.Add(reader.GetDateTime(0).ToString("dd-MMM-yyyy HH:mm:ss.fff"));
+                            lastUpdate.Add(reader.GetString(1));
+                            break;
+                        case "TIMESTAMP_NOMINAL":
+                            
+                            lastUpdate.Add(reader.GetDateTime(0).ToString("dd-MMM-yyyy HH:mm:ss.fff"));
+                            lastUpdate.Add(reader.GetString(1));
+                            break;
+
+                        case "ID_NOMINAL":
+                            lastUpdate.Add(reader.GetString(0));
+                            lastUpdate.Add(reader.GetString(1));
+                            break;
+                    }
+                   
                 }
                 sqlReaderCon.Close();
                 return lastUpdate;
@@ -334,7 +481,8 @@ namespace WorkerService1
                         "Procedure: " + ex.Errors[i].Procedure + "\n");
                 }
                 _logger.LogInformation(errorMessages.ToString());
-                return "Error";
+                lastUpdate.Add("ERROR");
+                return lastUpdate;
             }
 
         }
