@@ -82,8 +82,10 @@ namespace WorkerService1
             for (int i = 1; i <= returnTotalDb(); i++)
             {
                 _logger.Info($"___________  Start processing from BU : {returnBU(i)} ________\n");
+                //_logger.Info($"{_configuration[$"DataConfig: SourceDB{i}"]}, {_configuration[$"DataConfig: DestinationDB{i}"]}, {i}, {returnParameterType(i)}");
+
                 mapOracleData(_configuration[$"DataConfig:SourceDB{i}"], _configuration[$"DataConfig:DestinationDB{i}"], i, returnParameterType(i));
-                
+
             }
 
         }
@@ -153,13 +155,13 @@ namespace WorkerService1
                 case "TIMESTAMP_NOMINAL":
                     lastUpdate = getParam(numberBU, parameter)[0];
                     lastUpdateOptional = getParam(numberBU, parameter)[1];
-                    parameterCondition = $"CREATED_TIME > TO_TIMESTAMP('{lastUpdate}', 'DD-Mon-RR HH24:MI:SS.FF3') AND NOMINAL_COLUMN > {lastUpdateOptional} ";
+                    parameterCondition = $"CREATED_TIME > TO_TIMESTAMP('{lastUpdate}', 'DD-Mon-RR HH24:MI:SS.FF3') AND NOMINAL > {lastUpdateOptional} ";
                     break;
 
                 case "ID_NOMINAL":
                     lastUpdate = getParam(numberBU, parameter)[0];
                     lastUpdateOptional = getParam(numberBU, parameter)[1];
-                    parameterCondition = $"ID > {lastUpdate} AND NOMINAL_COLUMN > {lastUpdateOptional}";
+                    parameterCondition = $"ID > {lastUpdate} AND NOMINAL > {lastUpdateOptional}";
                     break;
             }
             
@@ -225,17 +227,17 @@ namespace WorkerService1
 
                         case "TIMESTAMP_NOMINAL":
                             lastUpdate = reader.GetDateTime(getIndexFor(numberBU, "CREATED_TIME")).ToString("yyyy-MM-dd HH:mm:ss.fff");
-                            lastUpdateOptional = reader.GetString(getIndexFor(numberBU, "NOMINAL"));
+                            lastUpdateOptional = reader.GetDecimal(getIndexFor(numberBU, "NOMINAL")).ToString();
                             updateParam(lastUpdate, lastUpdateOptional, numberBU, parameter);
                             break;
 
                         case "ID_NOMINAL":
                             lastUpdate = reader.GetString(getIndexFor(numberBU, "ID"));
-                            lastUpdateOptional = reader.GetString(getIndexFor(numberBU, "NOMINAL"));
+                            lastUpdateOptional = reader.GetDecimal(getIndexFor(numberBU, "NOMINAL")).ToString();
                             updateParam(lastUpdate, lastUpdateOptional, numberBU, parameter);
                             break;
                     }
-                    _logger.Info($"______________________________  INSERTED SUCCESSFULLY  _________________________\nINSERTED AT : {DateTime.Now}\nPARAMETER UPDATED : {lastUpdate} | {lastUpdateOptional}");
+                    _logger.Info($"_____________  INSERTED SUCCESSFULLY  ______________\nINSERTED AT : {DateTime.Now}\nPARAMETER UPDATED : {lastUpdate} | {lastUpdateOptional}");
                     listData = "";     
                     }
                     catch (SqlException ex)
@@ -463,12 +465,12 @@ namespace WorkerService1
                         case "TIMESTAMP_NOMINAL":
                             
                             lastUpdate.Add(reader.GetDateTime(0).ToString("dd-MMM-yyyy HH:mm:ss.fff"));
-                            lastUpdate.Add(reader.GetString(1));
+                            lastUpdate.Add(reader.GetDecimal(1).ToString());
                             break;
 
                         case "ID_NOMINAL":
                             lastUpdate.Add(reader.GetDecimal(0).ToString());
-                            lastUpdate.Add(reader.GetString(1));
+                            lastUpdate.Add(reader.GetDecimal(1).ToString());
                             break;
                     }
                    
