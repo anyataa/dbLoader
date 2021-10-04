@@ -155,13 +155,17 @@ namespace WorkerService1
                 case "TIMESTAMP_NOMINAL":
                     lastUpdate = getParam(numberBU, parameter)[0];
                     lastUpdateOptional = getParam(numberBU, parameter)[1];
-                    parameterCondition = $"CREATED_TIME > TO_TIMESTAMP('{lastUpdate}', 'DD-Mon-RR HH24:MI:SS.FF3') AND NOMINAL > {lastUpdateOptional} ";
+
+                    parameterCondition = $"CREATED_TIME > TO_TIMESTAMP('{lastUpdate}', 'DD-Mon-RR HH24:MI:SS.FF3') AND NOMINAL != {lastUpdateOptional} ";
+
                     break;
 
                 case "ID_NOMINAL":
                     lastUpdate = getParam(numberBU, parameter)[0];
                     lastUpdateOptional = getParam(numberBU, parameter)[1];
-                    parameterCondition = $"ID > {lastUpdate} AND NOMINAL > {lastUpdateOptional}";
+
+                    parameterCondition = $"ID > {lastUpdate} AND NOMINAL != {lastUpdateOptional}";
+
                     break;
             }
             
