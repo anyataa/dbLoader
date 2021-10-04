@@ -153,13 +153,13 @@ namespace WorkerService1
                 case "TIMESTAMP_NOMINAL":
                     lastUpdate = getParam(numberBU, parameter)[0];
                     lastUpdateOptional = getParam(numberBU, parameter)[1];
-                    parameterCondition = $"CREATED_TIME > TO_TIMESTAMP('{lastUpdate}', 'DD-Mon-RR HH24:MI:SS.FF3') AND NOMINAL_COLUMN > {lastUpdateOptional} ";
+                    parameterCondition = $"CREATED_TIME > TO_TIMESTAMP('{lastUpdate}', 'DD-Mon-RR HH24:MI:SS.FF3') AND NOMINAL > {lastUpdateOptional} ";
                     break;
 
                 case "ID_NOMINAL":
                     lastUpdate = getParam(numberBU, parameter)[0];
                     lastUpdateOptional = getParam(numberBU, parameter)[1];
-                    parameterCondition = $"ID > {lastUpdate} AND NOMINAL_COLUMN > {lastUpdateOptional}";
+                    parameterCondition = $"ID > {lastUpdate} AND NOMINAL > {lastUpdateOptional}";
                     break;
             }
             
@@ -463,12 +463,12 @@ namespace WorkerService1
                         case "TIMESTAMP_NOMINAL":
                             
                             lastUpdate.Add(reader.GetDateTime(0).ToString("dd-MMM-yyyy HH:mm:ss.fff"));
-                            lastUpdate.Add(reader.GetString(1));
+                            lastUpdate.Add(reader.GetDecimal(1).ToString());
                             break;
 
                         case "ID_NOMINAL":
                             lastUpdate.Add(reader.GetDecimal(0).ToString());
-                            lastUpdate.Add(reader.GetString(1));
+                            lastUpdate.Add(reader.GetDecimal(1).ToString());
                             break;
                     }
                    
