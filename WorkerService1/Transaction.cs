@@ -12,15 +12,19 @@ using Microsoft.Extensions.Configuration;
 using Oracle.ManagedDataAccess.Client;
 using Oracle.ManagedDataAccess.Types;
 using Microsoft.Data.SqlClient;
+using System.Reflection;
+using log4net;
+using log4net.Config;
 using System.Data;
-
+using System.IO;
 
 namespace WorkerService1
 {
 
     class Transaction
     {
-        private readonly ILogger<Worker> _logger;
+        //private readonly ILogger<Worker> _logger;
+        private static readonly ILog _logger = LogManager.GetLogger(MethodBase.GetCurrentMethod().DeclaringType);
         private readonly IConfiguration _configuration;
         private OracleConnection con = new OracleConnection();
         private SqlConnection sqlReaderCon = new SqlConnection();
@@ -30,7 +34,7 @@ namespace WorkerService1
         public Transaction(ILogger<Worker> logger, IConfiguration configuration)
         {
             _configuration = configuration;
-            _logger = logger;
+            //_logger = logger;
            
         }
 
@@ -69,6 +73,7 @@ namespace WorkerService1
         public async Task mapMessageConfig()
         {
 
+            log4NetConfiguration();
             con.ConnectionString = returnOracleDB();
             sqlReaderCon.ConnectionString = returnSqlDB();
             sqlInsertCon.ConnectionString = returnSqlDB();
@@ -76,10 +81,17 @@ namespace WorkerService1
 
             for (int i = 1; i <= returnTotalDb(); i++)
             {
+                _logger.Info($"___________  Start processing from BU : {returnBU(i)} ________\n");
                 mapOracleData(_configuration[$"DataConfig:SourceDB{i}"], _configuration[$"DataConfig:DestinationDB{i}"], i, returnParameterType(i));
-                _logger.LogInformation(Logging.succesCode ,$"Start processing from BU : {returnBU(i)}");
+                
             }
 
+        }
+
+        public void log4NetConfiguration() {
+            
+            var logRepository = LogManager.GetRepository(Assembly.GetEntryAssembly());
+            XmlConfigurator.Configure(logRepository, new FileInfo("log4net.config"));
         }
 
    
@@ -154,7 +166,7 @@ namespace WorkerService1
             string selectOracleQuery = @$"SELECT {selectDataSource} FROM {sourceTable} WHERE  {parameterCondition} FETCH NEXT {limitData} ROWS ONLY";
 
             cmd.CommandText = selectOracleQuery;
-            _logger.LogInformation(Logging.sqlCode,selectOracleQuery);
+            _logger.Info(selectOracleQuery);
             con.Open();
             OracleDataReader reader = cmd.ExecuteReader();
 
@@ -223,7 +235,7 @@ namespace WorkerService1
                             updateParam(lastUpdate, lastUpdateOptional, numberBU, parameter);
                             break;
                     }
-                    _logger.LogInformation(Logging.succesCode , $"______________________________  INSERTED SUCCESSFULLY  _________________________\nINSERTED AT : {DateTime.Now}\nPARAMETER UPDATED : {lastUpdate} | {lastUpdateOptional}");
+                    _logger.Info($"______________________________  INSERTED SUCCESSFULLY  _________________________\nINSERTED AT : {DateTime.Now}\nPARAMETER UPDATED : {lastUpdate} | {lastUpdateOptional}");
                     listData = "";     
                     }
                     catch (SqlException ex)
@@ -236,13 +248,14 @@ namespace WorkerService1
                                 "Source: " + ex.Errors[i].Source + "\n" +
                                 "Procedure: " + ex.Errors[i].Procedure + "\n");
                         }
-                        _logger.LogError(Logging.errorCode ,errorMessages.ToString());
+                        _logger.Error(errorMessages.ToString());
                     }
 
-                    _logger.LogInformation(Logging.sqlCode ,$"{insertData}");        
+                    _logger.Info($"{insertData}");        
             }
             con.Close();
         }
+
 
         public int getIndexFor(int numberBU, string columnParam)
         {
@@ -387,9 +400,8 @@ namespace WorkerService1
                         "Source: " + ex.Errors[i].Source + "\n" +
                         "Procedure: " + ex.Errors[i].Procedure + "\n");
                 }
-                _logger.LogWarning(errorMessages.ToString());
+                _logger.Warn(errorMessages.ToString());
             }
-           
         }
 
         public List<string> getParam(int numberBU, string parameter) {
@@ -474,7 +486,7 @@ namespace WorkerService1
                         "Source: " + ex.Errors[i].Source + "\n" +
                         "Procedure: " + ex.Errors[i].Procedure + "\n");
                 }
-                _logger.LogError(Logging.criticalCode,errorMessages.ToString());
+                _logger.Error(errorMessages.ToString());
                 return null;
             }
 
