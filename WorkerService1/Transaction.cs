@@ -70,6 +70,15 @@ namespace WorkerService1
         return _configuration[$"DataConfig:Parameter{parameterNumber}"];
         }
 
+        private List<string> returnParameterColumnName(int parameterNumber) {
+
+            return new List<string> 
+            { 
+                _configuration[$"DataConfig:ParameterColumn1.{parameterNumber}"],
+                _configuration[$"DataConfig:ParameterColumn2.{parameterNumber}"]
+            };
+        }
+
         public async Task mapMessageConfig()
         {
 
@@ -82,10 +91,16 @@ namespace WorkerService1
             for (int i = 1; i <= returnTotalDb(); i++)
             {
                 _logger.Info($"___________  Start processing from BU : {returnBU(i)} ________\n");
-                //_logger.Info($"{_configuration[$"DataConfig: SourceDB{i}"]}, {_configuration[$"DataConfig: DestinationDB{i}"]}, {i}, {returnParameterType(i)}");
+                //_logger.Info($"{returnParameterColumnName(i)[0]} {returnParameterColumnName(i)[1] }");
 
-                mapOracleData(_configuration[$"DataConfig:SourceDB{i}"], _configuration[$"DataConfig:DestinationDB{i}"], i, returnParameterType(i));
-
+                mapOracleData(
+                    _configuration[$"DataConfig:SourceDB{i}"],
+                    _configuration[$"DataConfig:DestinationDB{i}"],
+                    i,
+                    returnParameterType(i),
+                    returnParameterColumnName(i)[0], 
+                    returnParameterColumnName(i)[1]
+                    );
             }
 
         }
@@ -98,7 +113,7 @@ namespace WorkerService1
 
    
 
-        public  void mapOracleData(string sourceTable, string destinationTable, int numberBU, string parameter) {
+        public  void mapOracleData(string sourceTable, string destinationTable, int numberBU, string parameter, string parameterColumn1, string parameterColumn2) {
 
             OracleCommand cmd = con.CreateCommand();
             string limitData = returnLimitData();
@@ -138,25 +153,25 @@ namespace WorkerService1
             {
                 case "TIMESTAMP_ONLY":
                     lastUpdate = getParam(numberBU, parameter)[0];
-                    parameterCondition = $"CREATED_TIME > TO_TIMESTAMP('{lastUpdate}', 'DD-Mon-RR HH24:MI:SS.FF3')";
+                    parameterCondition = $"{parameterColumn1} > TO_TIMESTAMP('{lastUpdate}', 'DD-Mon-RR HH24:MI:SS.FF3')";
                     break;
 
                 case "ID_ONLY":
                     lastUpdate = getParam(numberBU, parameter)[0];
-                    parameterCondition = $"ID > {lastUpdate}";
+                    parameterCondition = $"{parameterColumn1} > {lastUpdate}";
                     break;
 
                 case "TIMESTAMP_ID":
                     lastUpdate = getParam(numberBU, parameter)[0];
                     lastUpdateOptional = getParam(numberBU, parameter)[1];
-                    parameterCondition = $"CREATED_TIME > TO_TIMESTAMP('{lastUpdate}', 'DD-Mon-RR HH24:MI:SS.FF3') AND ID > {lastUpdateOptional} ";
+                    parameterCondition = $"{parameterColumn1} > TO_TIMESTAMP('{lastUpdate}', 'DD-Mon-RR HH24:MI:SS.FF3') AND {parameterColumn2} != {lastUpdateOptional} ";
                     break;
 
                 case "TIMESTAMP_NOMINAL":
                     lastUpdate = getParam(numberBU, parameter)[0];
                     lastUpdateOptional = getParam(numberBU, parameter)[1];
 
-                    parameterCondition = $"CREATED_TIME > TO_TIMESTAMP('{lastUpdate}', 'DD-Mon-RR HH24:MI:SS.FF3') AND NOMINAL != {lastUpdateOptional} ";
+                    parameterCondition = $"{parameterColumn1} > TO_TIMESTAMP('{lastUpdate}', 'DD-Mon-RR HH24:MI:SS.FF3') AND {parameterColumn2} != {lastUpdateOptional} ";
 
                     break;
 
@@ -164,7 +179,7 @@ namespace WorkerService1
                     lastUpdate = getParam(numberBU, parameter)[0];
                     lastUpdateOptional = getParam(numberBU, parameter)[1];
 
-                    parameterCondition = $"ID > {lastUpdate} AND NOMINAL != {lastUpdateOptional}";
+                    parameterCondition = $"{parameterColumn1} > {lastUpdate} AND {parameterColumn2} != {lastUpdateOptional}";
 
                     break;
             }
