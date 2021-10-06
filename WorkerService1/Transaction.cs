@@ -22,47 +22,23 @@ namespace WorkerService1
         private OracleConnection con = new OracleConnection();
         private SqlConnection sqlReaderCon = new SqlConnection();
         private SqlConnection sqlInsertCon = new SqlConnection();
-        private Config config = new Config();
         private Database dataBase;
-
+        private Configuration configurationTable;
+        private Parameter parameterTable;
         public Transaction(ILogger<Worker> logger, IConfiguration configuration)
         {
             _configuration = configuration;
             dataBase = new Database(configuration);
+            configurationTable = new Configuration(configuration);
+            parameterTable = new Parameter(configuration);
             //_logger = logger;
 
         }
 
-        //private string returnOracleDB()
-        //{
-        //    return _configuration["ConnectionStrings:OracleDBConnection"];
-        //}
-        //private string returnSqlDB()
-        //{
-        //    return _configuration["ConnectionStrings:SqlServerDBConnection"];
-        //}
-
-        private string returnBU(int NumberBU)
-        {
-            return _configuration[$"DataConfig:BU{NumberBU}"];
-        }
-
-        private string returnLimitData() 
-        {
-            return _configuration["DataConfig:LimitData"];
-        }
-        private string returnConfigTableName()
-        {
-            return _configuration["DataConfig:ConfigTableName"];
-        }
-
-        private int returnTotalDb() {
-            return int.Parse(_configuration["DataConfig:TotalDB"]);         
-        }
 
         private string returnParameterType(int parameterNumber) 
         { 
-        return _configuration[$"DataConfig:Parameter{parameterNumber}"];
+             return _configuration[$"DataConfig:Parameter{parameterNumber}"];
         }
 
         private List<string> returnParameterColumnName(int parameterNumber) {
@@ -82,23 +58,27 @@ namespace WorkerService1
             sqlReaderCon.ConnectionString = dataBase.returnSqlDB();
             sqlInsertCon.ConnectionString = dataBase.returnSqlDB();
 
-
-            //for (int i = 1; i <= returnTotalDb(); i++)
+            //(parameterTable.getListSource(1)).ForEach(delegate (string item)
             //{
-            //    _logger.Info($"___________  Start processing from BU : {returnBU(i)} ________\n");
-            //    //_logger.Info($"{returnParameterColumnName(i)[0]} {returnParameterColumnName(i)[1] }");
+            //    _logger.Info(item);
+            //});
 
-            //    mapOracleData(
-            //        _configuration[$"DataConfig:SourceDB{i}"],
-            //        _configuration[$"DataConfig:DestinationDB{i}"],
-            //        i,
-            //        returnParameterType(i),
-            //        returnParameterColumnName(i)[0], 
-            //        returnParameterColumnName(i)[1]
-            //        );
-            //}
 
-            _logger.Info(dataBase.returnOracleDB());
+            for (int i = 1; i <= dataBase.returnTotalDb(); i++)
+            {
+                _logger.Info($"___________  Start processing from BU : {dataBase.returnBU(i)} ________\n");
+
+                mapOracleData(
+                    _configuration[$"DataConfig:SourceDB{i}"],
+                    _configuration[$"DataConfig:DestinationDB{i}"],
+                    i,
+                    parameterTable.returnParameterType(i),
+                    returnParameterColumnName(i)[0],
+                    returnParameterColumnName(i)[1]
+                    );
+            }
+
+
 
         }
 
@@ -106,6 +86,7 @@ namespace WorkerService1
             
             var logRepository = LogManager.GetRepository(Assembly.GetEntryAssembly());
             XmlConfigurator.Configure(logRepository, new FileInfo("log4net.config"));
+            
         }
 
    
@@ -113,8 +94,8 @@ namespace WorkerService1
         public  void mapOracleData(string sourceTable, string destinationTable, int numberBU, string parameter, string parameterColumn1, string parameterColumn2) {
 
             OracleCommand cmd = con.CreateCommand();
-            string limitData = returnLimitData();
-            string[] sourceArray = getListSource(numberBU).ToArray();
+            string limitData = dataBase.returnLimitData();
+            string[] sourceArray = configurationTable.getListSource(numberBU).ToArray();
             string selectDataSource = "";
 
             //set insert based on configuration 
@@ -124,17 +105,17 @@ namespace WorkerService1
             //string updateLastTimestamp;
 
 
-            getListDestination(numberBU).ForEach(delegate (string item)
+            configurationTable.getListDestination(numberBU).ForEach(delegate (string item)
                 {
                     insertParam = insertParam + item + ",";
                     insertValue = insertValue + "@" + item + ",";
                 });
 
-            string[] destinationArray =  getListDestination(numberBU).ToArray();
+            string[] destinationArray = configurationTable.getListDestination(numberBU).ToArray();
             insertParam = insertParam.Substring(0, insertParam.Length - 1);
             insertValue = insertValue.Substring(0, insertValue.Length - 1);
-       
-            getListSource(numberBU).ForEach(delegate (string item)
+
+            configurationTable.getListSource(numberBU).ForEach(delegate (string item)
             {
                 selectDataSource = selectDataSource + item + "," ;
             });
@@ -193,7 +174,7 @@ namespace WorkerService1
                     for (int i = 0; i < sourceArray.Length; i++)
                     {
 
-                        switch (getListDatatype(numberBU)[i])
+                        switch (configurationTable.getListDatatype(numberBU)[i])
                         {
                             case "STRING":
                              listData = listData + $"'{reader.GetString(i)}'"+","; 
@@ -227,30 +208,30 @@ namespace WorkerService1
                     {
                         case "TIMESTAMP_ONLY":
                             lastUpdate = reader.GetDateTime(getIndexFor(numberBU, "CREATED_TIME")).ToString("yyyy-MM-dd HH:mm:ss.fff");
-                            updateParam(lastUpdate,"", numberBU, parameter);
+                            parameterTable.updateParam(lastUpdate,"", numberBU, parameter);
                             break;
 
                         case "ID_ONLY":
                             lastUpdate = reader.GetString(getIndexFor(numberBU, "ID"));
-                            updateParam(lastUpdate, "", numberBU, parameter);
+                            parameterTable.updateParam(lastUpdate, "", numberBU, parameter);
                             break;
 
                         case "TIMESTAMP_ID":
                             lastUpdate = reader.GetDateTime(getIndexFor(numberBU, "CREATED_TIME")).ToString("yyyy-MM-dd HH:mm:ss.fff");
                             lastUpdateOptional = reader.GetString(getIndexFor(numberBU, "ID"));
-                            updateParam(lastUpdate, lastUpdateOptional, numberBU, parameter);
+                            parameterTable.updateParam(lastUpdate, lastUpdateOptional, numberBU, parameter);
                             break;
 
                         case "TIMESTAMP_NOMINAL":
                             lastUpdate = reader.GetDateTime(getIndexFor(numberBU, "CREATED_TIME")).ToString("yyyy-MM-dd HH:mm:ss.fff");
                             lastUpdateOptional = reader.GetDecimal(getIndexFor(numberBU, "NOMINAL")).ToString();
-                            updateParam(lastUpdate, lastUpdateOptional, numberBU, parameter);
+                            parameterTable.updateParam(lastUpdate, lastUpdateOptional, numberBU, parameter);
                             break;
 
                         case "ID_NOMINAL":
                             lastUpdate = reader.GetString(getIndexFor(numberBU, "ID"));
                             lastUpdateOptional = reader.GetDecimal(getIndexFor(numberBU, "NOMINAL")).ToString();
-                            updateParam(lastUpdate, lastUpdateOptional, numberBU, parameter);
+                            parameterTable.updateParam(lastUpdate, lastUpdateOptional, numberBU, parameter);
                             break;
                     }
                     _logger.Info($"_____________  INSERTED SUCCESSFULLY  ______________\nINSERTED AT : {DateTime.Now}\nPARAMETER UPDATED : {lastUpdate} | {lastUpdateOptional}");
@@ -278,9 +259,9 @@ namespace WorkerService1
         public int getIndexFor(int numberBU, string columnParam)
         {
             int index = 0;
-            for (int i = 0; i < getListSource(numberBU).ToArray().Length; i++)
+            for (int i = 0; i < configurationTable.getListSource(numberBU).ToArray().Length; i++)
             {
-                if (getListSource(numberBU)[i] == columnParam)
+                if (configurationTable.getListSource(numberBU)[i] == columnParam)
                 {
                     index = i;
                 }
@@ -289,84 +270,10 @@ namespace WorkerService1
             return index;
         }
 
-        public List<string> getListSource(int numberBU)
+
+
+        public void updateParam(string paramValue, string paramValueOptional, int numberBU, string parameter) 
         {
-
-            List<string> sources = new List<string>();
-            sqlReaderCon.Open();
-            SqlCommand configCommand = sqlReaderCon.CreateCommand();
-            configCommand.CommandText = $@"SELECT 
-                ID,
-                SOURCE,
-                DESTINATION,
-                DATATYPE,
-                BU, 
-                TABLE_SOURCE,  
-                TABLE_DESTINATION 
-                FROM {returnConfigTableName()} WHERE BU = '{returnBU(numberBU)}'";
-
-            SqlDataReader configReader = configCommand.ExecuteReader();
-
-            while (configReader.Read())
-            {
-                sources.Add(configReader.GetString(1));
-            }
-            sqlReaderCon.Close();
-            return sources;
-        }
-        public List<string> getListDestination(int numberBU)
-        {
-
-            List<string> destination = new List<string>();
-            sqlReaderCon.Open();
-            SqlCommand configCommand = sqlReaderCon.CreateCommand();
-            configCommand.CommandText = $@"SELECT 
-                ID,
-                SOURCE,
-                DESTINATION,
-                DATATYPE,
-                BU, 
-                TABLE_SOURCE,  
-                TABLE_DESTINATION 
-                FROM {returnConfigTableName()} WHERE BU = '{returnBU(numberBU)}'";
-
-            SqlDataReader configReader = configCommand.ExecuteReader();
-
-            while (configReader.Read())
-            {
-                destination.Add(configReader.GetString(2));
-            }
-            sqlReaderCon.Close();
-            return destination;
-        }
-
-        public List<string> getListDatatype(int numberBU)
-        {
-
-            List<string> dataType = new List<string>();
-            sqlReaderCon.Open();
-            SqlCommand configCommand = sqlReaderCon.CreateCommand();
-            configCommand.CommandText = $@"SELECT 
-                ID,
-                SOURCE,
-                DESTINATION,
-                DATATYPE,
-                BU, 
-                TABLE_SOURCE,  
-                TABLE_DESTINATION 
-                FROM {returnConfigTableName()} WHERE BU = '{returnBU(numberBU)}'";
-
-            SqlDataReader configReader = configCommand.ExecuteReader();
-
-            while (configReader.Read())
-            {
-                dataType.Add(configReader.GetString(3));
-            }
-            sqlReaderCon.Close();
-            return dataType;
-        }
-
-        public void updateParam(string paramValue, string paramValueOptional, int numberBU, string parameter) {
             string parameter_table = _configuration["DataConfig:ParamTableName"];
 
             string setParameter = "";
@@ -397,7 +304,7 @@ namespace WorkerService1
 
             string updateCmdSql = @$"UPDATE {parameter_table} 
             {setParameter}  
-            WHERE BU = '{returnBU(numberBU)}'";
+            WHERE BU = '{dataBase.returnBU(numberBU)}'";
 
             SqlCommand cmd = new SqlCommand(updateCmdSql,sqlInsertCon);
             StringBuilder errorMessages = new StringBuilder();
@@ -422,7 +329,8 @@ namespace WorkerService1
             }
         }
 
-        public List<string> getParam(int numberBU, string parameter) {
+        public List<string> getParam(int numberBU, string parameter)
+        {
             string parameter_table = _configuration["DataConfig:ParamTableName"];
             StringBuilder errorMessages = new StringBuilder();
             //string lastUpdate = "";
@@ -452,7 +360,7 @@ namespace WorkerService1
 
             string getCmdSql = @$"SELECT {setParameter}
                                FROM {parameter_table}
-                               WHERE BU = '{returnBU(numberBU)}'";
+                               WHERE BU = '{dataBase.returnBU(numberBU)}'";
 
             SqlCommand cmd = new SqlCommand(getCmdSql, sqlReaderCon);
 

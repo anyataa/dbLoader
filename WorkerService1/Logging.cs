@@ -12,6 +12,11 @@ namespace WorkerService1
         public const int succesCode = 200;
         public const int warning = 400;
         public const int errorCode = 500;
-        public const int criticalCode = 505; 
+        public const int criticalCode = 505;
+
+
+        public void logger4net() { 
+        
+        }
     }
 }
