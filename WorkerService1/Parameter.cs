@@ -3,6 +3,11 @@ using System.Collections.Generic;
 using System.Text;
 using Microsoft.Data.SqlClient;
 using Microsoft.Extensions.Configuration;
+using log4net;
+using System.Reflection;
+using log4net.Config;
+using System.IO;
+
 namespace WorkerService1
 {
     class Parameter
@@ -11,16 +16,115 @@ namespace WorkerService1
         private SqlConnection sqlInsertCon = new SqlConnection();
         private Database dataBase;
         private IConfiguration _configuration ;
+        private static readonly ILog _logger = LogManager.GetLogger(MethodBase.GetCurrentMethod().DeclaringType);
+
+        public void log4NetConfiguration()
+        {
+
+            var logRepository = LogManager.GetRepository(Assembly.GetEntryAssembly());
+            XmlConfigurator.Configure(logRepository, new FileInfo("log4net.config"));
+
+        }
 
         public Parameter(IConfiguration configuration) 
         {
+            log4NetConfiguration();
             dataBase = new Database(configuration);
             _configuration = configuration;
         }
 
-        public string returnParameterType(int parameterNumber)
+        public string returnParameterType(string BU)
         {
-            return _configuration[$"DataConfig:Parameter{parameterNumber}"];
+
+            sqlReaderCon.ConnectionString = dataBase.returnSqlDB();
+            string getParameterSP = $"exec sp_GetParamType {BU}";
+            SqlCommand cmd = new SqlCommand(getParameterSP, sqlReaderCon);
+            StringBuilder errorMessages = new StringBuilder();
+            try 
+            {
+                sqlReaderCon.Open();
+                SqlDataReader reader = cmd.ExecuteReader();
+                string parameterType = "";
+                while (reader.Read()) {
+                    parameterType = reader.GetString(0);
+                }
+                sqlReaderCon.Close();
+                return parameterType;
+            }
+            catch (SqlException ex)
+            {
+                for (int i = 0; i < ex.Errors.Count; i++)
+                {
+                    errorMessages.Append("Index #" + i + "\n" +
+                        "Message: " + ex.Errors[i].Message + "\n" +
+                        "LineNumber: " + ex.Errors[i].LineNumber + "\n" +
+                        "Source: " + ex.Errors[i].Source + "\n" +
+                        "Procedure: " + ex.Errors[i].Procedure + "\n");
+                }
+                _logger.Warn(errorMessages.ToString());
+                sqlReaderCon.Close();
+                return "Error";
+            }
+        }
+
+        public List<string> getParameterColumnName(string parameter, string BU) 
+        {
+            List<string> columnNameList = new List<string>();
+            sqlReaderCon.ConnectionString = dataBase.returnSqlDB();
+            string getParameterSP = $"";
+            if (parameter == "ID_ONLY" || parameter == "TIMESTAMP_ONLY")
+            {
+                getParameterSP = $"exec sp_GetColumnOneParam '{BU}'";
+            }
+            else 
+            {
+                getParameterSP = $"exec sp_GetColumnTwoParam '{BU}'";
+            }
+            
+            SqlCommand cmd = new SqlCommand(getParameterSP, sqlReaderCon);
+            StringBuilder errorMessages = new StringBuilder();
+            try
+            {
+                sqlReaderCon.Open();
+                SqlDataReader reader = cmd.ExecuteReader();
+                string parameterColumn1 = "";
+                string parameterColumn2 = "";
+                while (reader.Read())
+                {
+                    if (parameter == "ID_ONLY" || parameter == "TIMESTAMP_ONLY")
+                    {
+                        parameterColumn1 = reader.GetString(0);
+                        columnNameList.Add(parameterColumn1);
+                    }
+                    else
+                    {
+                        parameterColumn1 = reader.GetString(0);
+                        parameterColumn2 = reader.GetString(1);
+
+                        columnNameList.Add(parameterColumn1);
+                        columnNameList.Add(parameterColumn2);
+                        
+                    }
+                   
+                }
+                sqlReaderCon.Close();
+                return columnNameList;
+            }
+            catch (SqlException ex)
+            {
+                for (int i = 0; i < ex.Errors.Count; i++)
+                {
+                    errorMessages.Append("Index #" + i + "\n" +
+                        "Message: " + ex.Errors[i].Message + "\n" +
+                        "LineNumber: " + ex.Errors[i].LineNumber + "\n" +
+                        "Source: " + ex.Errors[i].Source + "\n" +
+                        "Procedure: " + ex.Errors[i].Procedure + "\n");
+                }
+                _logger.Warn(errorMessages.ToString());
+                sqlReaderCon.Close();
+                return null;
+            }
+
         }
 
         public void updateParam(string paramValue, string paramValueOptional, int numberBU, string parameter)
@@ -60,7 +164,6 @@ namespace WorkerService1
 
             SqlCommand cmd = new SqlCommand(updateCmdSql, sqlInsertCon);
             StringBuilder errorMessages = new StringBuilder();
-            //_logger.LogInformation($"{updateCmdSql}");
             try
             {
                 sqlInsertCon.Open();
@@ -77,7 +180,7 @@ namespace WorkerService1
                         "Source: " + ex.Errors[i].Source + "\n" +
                         "Procedure: " + ex.Errors[i].Procedure + "\n");
                 }
-                //_logger.Warn(errorMessages.ToString());
+                _logger.Warn(errorMessages.ToString());
             }
         }
 
@@ -87,7 +190,6 @@ namespace WorkerService1
             sqlReaderCon.ConnectionString = dataBase.returnSqlDB();
             string parameter_table = _configuration["DataConfig:ParamTableName"];
             StringBuilder errorMessages = new StringBuilder();
-            //string lastUpdate = "";
             string setParameter = "";
             List<string> lastUpdate = new List<string>();
 
@@ -130,7 +232,6 @@ namespace WorkerService1
                     {
                         case "TIMESTAMP_ONLY":
                             lastUpdate.Add(reader.GetDateTime(0).ToString("dd-MMM-yyyy HH:mm:ss.fff"));
-                            //_logger.LogInformation($"PARAM TIMESTAMP_ONLY : {reader.GetDateTime(0).ToString("dd-MMM-yyyy hh:mm:ss.fff")}");
                             break;
 
                         case "ID_ONLY":
@@ -167,7 +268,7 @@ namespace WorkerService1
                         "Source: " + ex.Errors[i].Source + "\n" +
                         "Procedure: " + ex.Errors[i].Procedure + "\n");
                 }
-                //_logger.Error(errorMessages.ToString());
+                _logger.Error(errorMessages.ToString());
                 return null;
             }
 

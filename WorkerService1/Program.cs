@@ -1,12 +1,8 @@
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
-using Microsoft.Extensions.Logging;
 using System;
-using Microsoft.Extensions.Configuration;
 using log4net;
-using System.IO;
 using System.Reflection;
-using log4net.Config;
 
 namespace WorkerService1
 {
@@ -18,20 +14,7 @@ namespace WorkerService1
         public static void Main(string[] args)
         {
             CreateHostBuilder(args).Build().Run();
-
-            // Load log4net configuration
-            var logRepository = LogManager.GetRepository(Assembly.GetEntryAssembly());
-            XmlConfigurator.Configure(logRepository, new FileInfo("log4net.config"));
-          
-
-            // Log some things
-            //log.Info("Hello logging world!");
-            //log.Error("Error!");
-            //log.Warn("Warn!");
-
             Console.ReadLine();
-
-
         }
     
 

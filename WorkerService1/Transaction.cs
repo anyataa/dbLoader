@@ -10,7 +10,6 @@ using System.Reflection;
 using log4net;
 using log4net.Config;
 using System.IO;
-
 namespace WorkerService1
 {
 
@@ -36,11 +35,7 @@ namespace WorkerService1
         }
 
 
-        private string returnParameterType(int parameterNumber) 
-        { 
-             return _configuration[$"DataConfig:Parameter{parameterNumber}"];
-        }
-
+     
         private List<string> returnParameterColumnName(int parameterNumber) {
 
             return new List<string> 
@@ -58,25 +53,25 @@ namespace WorkerService1
             sqlReaderCon.ConnectionString = dataBase.returnSqlDB();
             sqlInsertCon.ConnectionString = dataBase.returnSqlDB();
 
-            //(parameterTable.getListSource(1)).ForEach(delegate (string item)
+            //parameterTable.getParameterColumnName(parameterTable.returnParameterType("DBLOADER"), "DBLOADER").ForEach(delegate (string item)
             //{
             //    _logger.Info(item);
             //});
 
 
-            for (int i = 1; i <= dataBase.returnTotalDb(); i++)
-            {
-                _logger.Info($"___________  Start processing from BU : {dataBase.returnBU(i)} ________\n");
+            //for (int i = 1; i <= dataBase.returnTotalDb(); i++)
+                for (int i = 1; i <= 1; i++)
+                {
+                    _logger.Info($"___________  Start processing from BU : {dataBase.returnBU(i)} ________\n");
 
-                mapOracleData(
-                    _configuration[$"DataConfig:SourceDB{i}"],
-                    _configuration[$"DataConfig:DestinationDB{i}"],
-                    i,
-                    parameterTable.returnParameterType(i),
-                    returnParameterColumnName(i)[0],
-                    returnParameterColumnName(i)[1]
-                    );
-            }
+                    mapOracleData(
+                        _configuration[$"DataConfig:SourceDB{i}"],
+                        _configuration[$"DataConfig:DestinationDB{i}"],
+                        i,
+                        parameterTable.returnParameterType(dataBase.returnBU(i)),
+                        parameterTable.getParameterColumnName(parameterTable.returnParameterType(dataBase.returnBU(i)), dataBase.returnBU(i))
+                        );
+                }
 
 
 
@@ -91,7 +86,7 @@ namespace WorkerService1
 
    
 
-        public  void mapOracleData(string sourceTable, string destinationTable, int numberBU, string parameter, string parameterColumn1, string parameterColumn2) {
+        public  void mapOracleData(string sourceTable, string destinationTable, int numberBU, string parameter, List<string> listParameterColumn) {
 
             OracleCommand cmd = con.CreateCommand();
             string limitData = dataBase.returnLimitData();
@@ -131,25 +126,25 @@ namespace WorkerService1
             {
                 case "TIMESTAMP_ONLY":
                     lastUpdate = parameterTable.getParam(numberBU, parameter)[0];
-                    parameterCondition = $"{parameterColumn1} > TO_TIMESTAMP('{lastUpdate}', 'DD-Mon-RR HH24:MI:SS.FF3')";
+                    parameterCondition = $"{listParameterColumn[0]} > TO_TIMESTAMP('{lastUpdate}', 'DD-Mon-RR HH24:MI:SS.FF3')";
                     break;
 
                 case "ID_ONLY":
                     lastUpdate = parameterTable.getParam(numberBU, parameter)[0];
-                    parameterCondition = $"{parameterColumn1} > {lastUpdate}";
+                    parameterCondition = $"{listParameterColumn[0]} > {lastUpdate}";
                     break;
 
                 case "TIMESTAMP_ID":
                     lastUpdate = parameterTable.getParam(numberBU, parameter)[0];
                     lastUpdateOptional = parameterTable.getParam(numberBU, parameter)[1];
-                    parameterCondition = $"{parameterColumn1} > TO_TIMESTAMP('{lastUpdate}', 'DD-Mon-RR HH24:MI:SS.FF3') AND {parameterColumn2} != {lastUpdateOptional} ";
+                    parameterCondition = $"{listParameterColumn[0]} > TO_TIMESTAMP('{lastUpdate}', 'DD-Mon-RR HH24:MI:SS.FF3') AND {listParameterColumn[1]} != {lastUpdateOptional} ";
                     break;
 
                 case "TIMESTAMP_NOMINAL":
                     lastUpdate = parameterTable.getParam(numberBU, parameter)[0];
                     lastUpdateOptional = parameterTable.getParam(numberBU, parameter)[1];
 
-                    parameterCondition = $"{parameterColumn1} > TO_TIMESTAMP('{lastUpdate}', 'DD-Mon-RR HH24:MI:SS.FF3') AND {parameterColumn2} != {lastUpdateOptional} ";
+                    parameterCondition = $"{listParameterColumn[0]} > TO_TIMESTAMP('{lastUpdate}', 'DD-Mon-RR HH24:MI:SS.FF3') AND {listParameterColumn[1]} != {lastUpdateOptional} ";
 
                     break;
 
@@ -157,7 +152,7 @@ namespace WorkerService1
                     lastUpdate = parameterTable.getParam(numberBU, parameter)[0];
                     lastUpdateOptional = parameterTable.getParam(numberBU, parameter)[1];
 
-                    parameterCondition = $"{parameterColumn1} > {lastUpdate} AND {parameterColumn2} != {lastUpdateOptional}";
+                    parameterCondition = $"{listParameterColumn[0]} > {lastUpdate} AND {listParameterColumn[1]} != {lastUpdateOptional}";
 
                     break;
             }
