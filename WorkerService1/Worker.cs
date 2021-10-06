@@ -16,8 +16,6 @@ namespace WorkerService1
     {
         private readonly ILogger<Worker> _logger;
         private readonly IConfiguration _configuration;
-        private readonly Customer customer;
-        private readonly MessageString messageString;
         private readonly Transaction transaction;
 
 

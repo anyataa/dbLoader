@@ -1,21 +1,14 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Text;
-using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Configuration;
 using Oracle.ManagedDataAccess.Client;
-using Oracle.ManagedDataAccess.Types;
 using Microsoft.Data.SqlClient;
 using System.Reflection;
 using log4net;
 using log4net.Config;
-using System.Data;
 using System.IO;
 
 namespace WorkerService1
@@ -30,22 +23,24 @@ namespace WorkerService1
         private SqlConnection sqlReaderCon = new SqlConnection();
         private SqlConnection sqlInsertCon = new SqlConnection();
         private Config config = new Config();
+        private Database dataBase;
 
         public Transaction(ILogger<Worker> logger, IConfiguration configuration)
         {
             _configuration = configuration;
+            dataBase = new Database(configuration);
             //_logger = logger;
-           
+
         }
 
-        private string returnOracleDB()
-        {
-            return _configuration["ConnectionStrings:OracleDBConnection"];
-        }
-        private string returnSqlDB()
-        {
-            return _configuration["ConnectionStrings:SqlServerDBConnection"];
-        }
+        //private string returnOracleDB()
+        //{
+        //    return _configuration["ConnectionStrings:OracleDBConnection"];
+        //}
+        //private string returnSqlDB()
+        //{
+        //    return _configuration["ConnectionStrings:SqlServerDBConnection"];
+        //}
 
         private string returnBU(int NumberBU)
         {
@@ -83,25 +78,27 @@ namespace WorkerService1
         {
 
             log4NetConfiguration();
-            con.ConnectionString = returnOracleDB();
-            sqlReaderCon.ConnectionString = returnSqlDB();
-            sqlInsertCon.ConnectionString = returnSqlDB();
-            
+            con.ConnectionString = dataBase.returnOracleDB();
+            sqlReaderCon.ConnectionString = dataBase.returnSqlDB();
+            sqlInsertCon.ConnectionString = dataBase.returnSqlDB();
 
-            for (int i = 1; i <= returnTotalDb(); i++)
-            {
-                _logger.Info($"___________  Start processing from BU : {returnBU(i)} ________\n");
-                //_logger.Info($"{returnParameterColumnName(i)[0]} {returnParameterColumnName(i)[1] }");
 
-                mapOracleData(
-                    _configuration[$"DataConfig:SourceDB{i}"],
-                    _configuration[$"DataConfig:DestinationDB{i}"],
-                    i,
-                    returnParameterType(i),
-                    returnParameterColumnName(i)[0], 
-                    returnParameterColumnName(i)[1]
-                    );
-            }
+            //for (int i = 1; i <= returnTotalDb(); i++)
+            //{
+            //    _logger.Info($"___________  Start processing from BU : {returnBU(i)} ________\n");
+            //    //_logger.Info($"{returnParameterColumnName(i)[0]} {returnParameterColumnName(i)[1] }");
+
+            //    mapOracleData(
+            //        _configuration[$"DataConfig:SourceDB{i}"],
+            //        _configuration[$"DataConfig:DestinationDB{i}"],
+            //        i,
+            //        returnParameterType(i),
+            //        returnParameterColumnName(i)[0], 
+            //        returnParameterColumnName(i)[1]
+            //        );
+            //}
+
+            _logger.Info(dataBase.returnOracleDB());
 
         }
 
@@ -124,7 +121,7 @@ namespace WorkerService1
             string insertParam = "";
             string insertValue = "";
             string listData = "";
-            string updateLastTimestamp;
+            //string updateLastTimestamp;
 
 
             getListDestination(numberBU).ForEach(delegate (string item)
