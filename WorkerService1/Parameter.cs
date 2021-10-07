@@ -190,34 +190,33 @@ namespace WorkerService1
             sqlReaderCon.ConnectionString = dataBase.returnSqlDB();
             string parameter_table = _configuration["DataConfig:ParamTableName"];
             StringBuilder errorMessages = new StringBuilder();
-            string setParameter = "";
+            //string setParameter = "";
+            string getCmdSql = "";
             List<string> lastUpdate = new List<string>();
 
             switch (parameter)
             {
                 case "TIMESTAMP_ONLY":
-                    setParameter = " VAL_PARAM01";
+                    getCmdSql = $"exec sp_GetParamTimestampOnly  '{dataBase.returnBU(numberBU)}'";
                     break;
 
                 case "ID_ONLY":
-                    setParameter = $"VAL_PARAM02";
+                    getCmdSql = $"exec sp_GetParamIdOnly  '{dataBase.returnBU(numberBU)} ";
                     break;
 
                 case "TIMESTAMP_ID":
-                    setParameter = $"VAL_PARAM01, VAL_PARAM02";
+                    getCmdSql = $"exec sp_GetParamTimestampId  '{dataBase.returnBU(numberBU)}'";
                     break;
                 case "TIMESTAMP_NOMINAL":
-                    setParameter = $"VAL_PARAM01, VAL_PARAM03";
+                    getCmdSql = $"exec  sp_GetParamTimestampNominal  '{dataBase.returnBU(numberBU)}'";
                     break;
 
                 case "ID_NOMINAL":
-                    setParameter = $"VAL_PARAM02, VAL_PARAM03";
+                    getCmdSql = $"exec sp_GetParamIdNominal  '{dataBase.returnBU(numberBU)}'";
                     break;
             }
 
-            string getCmdSql = @$"SELECT {setParameter}
-                               FROM {parameter_table}
-                               WHERE BU = '{dataBase.returnBU(numberBU)}'";
+           
 
             SqlCommand cmd = new SqlCommand(getCmdSql, sqlReaderCon);
 
