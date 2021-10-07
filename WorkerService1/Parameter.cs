@@ -197,22 +197,22 @@ namespace WorkerService1
             switch (parameter)
             {
                 case "TIMESTAMP_ONLY":
-                    getCmdSql = $"exec sp_GetParamTimestampOnly  '{dataBase.returnBU(numberBU)}'";
+                    getCmdSql = $"sp_GetParamTimestampOnly  '{dataBase.returnBU(numberBU)}'";
                     break;
 
                 case "ID_ONLY":
-                    getCmdSql = $"exec sp_GetParamIdOnly  '{dataBase.returnBU(numberBU)} ";
+                    getCmdSql = $"sp_GetParamIdOnly  '{dataBase.returnBU(numberBU)} ";
                     break;
 
                 case "TIMESTAMP_ID":
-                    getCmdSql = $"exec sp_GetParamTimestampId  '{dataBase.returnBU(numberBU)}'";
+                    getCmdSql = $"sp_GetParamTimestampId  '{dataBase.returnBU(numberBU)}'";
                     break;
                 case "TIMESTAMP_NOMINAL":
-                    getCmdSql = $"exec  sp_GetParamTimestampNominal  '{dataBase.returnBU(numberBU)}'";
+                    getCmdSql = $"sp_GetParamTimestampNominal  '{dataBase.returnBU(numberBU)}'";
                     break;
 
                 case "ID_NOMINAL":
-                    getCmdSql = $"exec sp_GetParamIdNominal  '{dataBase.returnBU(numberBU)}'";
+                    getCmdSql = $"sp_GetParamIdNominal  '{dataBase.returnBU(numberBU)}'";
                     break;
             }
 
