@@ -10,15 +10,15 @@ namespace WorkerService1
 {
     public class Worker : BackgroundService
     {
-        private readonly ILogger<Worker> _logger;
+        
         private readonly IConfiguration _configuration;
         private readonly Transaction transaction;
 
 
-        public Worker(ILogger<Worker> logger, IConfiguration configuration)
+        public Worker( IConfiguration configuration)
         {
-            _logger = logger;
-            transaction = new Transaction(logger, configuration);
+           
+            transaction = new Transaction( configuration);
             _configuration = configuration;
         }
 
