@@ -15,7 +15,7 @@ namespace WorkerService1
 
     class Transaction
     {
-        //private readonly ILogger<Worker> _logger;
+ 
         private static readonly ILog _logger = LogManager.GetLogger(MethodBase.GetCurrentMethod().DeclaringType);
         private readonly IConfiguration _configuration;
         private OracleConnection con = new OracleConnection();
@@ -24,13 +24,13 @@ namespace WorkerService1
         private Database dataBase;
         private Configuration configurationTable;
         private Parameter parameterTable;
-        public Transaction(ILogger<Worker> logger, IConfiguration configuration)
+        public Transaction( IConfiguration configuration)
         {
             _configuration = configuration;
             dataBase = new Database(configuration);
             configurationTable = new Configuration(configuration);
             parameterTable = new Parameter(configuration);
-            //_logger = logger;
+ 
 
         }
 
