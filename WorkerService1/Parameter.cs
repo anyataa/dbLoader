@@ -141,7 +141,6 @@ namespace WorkerService1
                     break;
 
                 case "ID_ONLY":
-                    //setParameter = $"SET VAL_PARAM02 = {paramValue})";
                     setParameter = $"sp_UpdateParamID {paramValue},  '{dataBase.returnBU(numberBU)}'";
                     break;
 
