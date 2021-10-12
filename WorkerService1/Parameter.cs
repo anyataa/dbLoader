@@ -138,10 +138,12 @@ namespace WorkerService1
             {
                 case "TIMESTAMP_ONLY":
                     setParameter = $"SET VAL_PARAM01 = CAST('{paramValue}' AS Datetime2)";
+                    //setParameter = $"sp_UpdateParamTimestamp '{paramValue}', '{dataBase.returnBU(numberBU)}'";
                     break;
 
                 case "ID_ONLY":
-                    setParameter = $"SET VAL_PARAM02 = {paramValue}";
+                    setParameter = $"SET VAL_PARAM02 = {paramValue})";
+                    //setParameter = $"sp_UpdateParamTimestamp {paramValue}";
                     break;
 
                 case "TIMESTAMP_ID":
@@ -159,8 +161,7 @@ namespace WorkerService1
 
 
             string updateCmdSql = @$"UPDATE {parameter_table} 
-            {setParameter}  
-            WHERE BU = '{dataBase.returnBU(numberBU)}'";
+             {setParameter} WHERE BU = '{dataBase.returnBU(numberBU)}'";
 
             SqlCommand cmd = new SqlCommand(updateCmdSql, sqlInsertCon);
             StringBuilder errorMessages = new StringBuilder();
@@ -188,7 +189,7 @@ namespace WorkerService1
         public List<string> getParam(int numberBU, string parameter)
         {
             sqlReaderCon.ConnectionString = dataBase.returnSqlDB();
-            string parameter_table = _configuration["DataConfig:ParamTableName"];
+            //string parameter_table = _configuration["DataConfig:ParamTableName"];
             StringBuilder errorMessages = new StringBuilder();
             //string setParameter = "";
             string getCmdSql = "";

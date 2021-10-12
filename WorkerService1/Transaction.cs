@@ -17,6 +17,7 @@ namespace WorkerService1
     {
  
         private static readonly ILog _logger = LogManager.GetLogger(MethodBase.GetCurrentMethod().DeclaringType);
+        private readonly ILogger<Worker> _loggerFile;
         private readonly IConfiguration _configuration;
         private OracleConnection con = new OracleConnection();
         private SqlConnection sqlReaderCon = new SqlConnection();
@@ -24,26 +25,25 @@ namespace WorkerService1
         private Database dataBase;
         private Configuration configurationTable;
         private Parameter parameterTable;
-        public Transaction( IConfiguration configuration)
+        public Transaction( IConfiguration configuration, ILogger<Worker> loggerFile)
         {
             _configuration = configuration;
             dataBase = new Database(configuration);
             configurationTable = new Configuration(configuration);
             parameterTable = new Parameter(configuration);
- 
+            _loggerFile = loggerFile;
 
         }
-
 
      
-        private List<string> returnParameterColumnName(int parameterNumber) {
+        //private List<string> returnParameterColumnName(int parameterNumber) {
 
-            return new List<string> 
-            { 
-                _configuration[$"DataConfig:ParameterColumn1.{parameterNumber}"],
-                _configuration[$"DataConfig:ParameterColumn2.{parameterNumber}"]
-            };
-        }
+        //    return new List<string> 
+        //    { 
+        //        _configuration[$"DataConfig:ParameterColumn1.{parameterNumber}"],
+        //        _configuration[$"DataConfig:ParameterColumn2.{parameterNumber}"]
+        //    };
+        //}
 
         public async Task mapMessageConfig()
         {
@@ -144,7 +144,7 @@ namespace WorkerService1
                     lastUpdate = parameterTable.getParam(numberBU, parameter)[0];
                     lastUpdateOptional = parameterTable.getParam(numberBU, parameter)[1];
 
-                    parameterCondition = $"{listParameterColumn[0]} > TO_TIMESTAMP('{lastUpdate}', 'DD-Mon-RR HH24:MI:SS.FF3') AND {listParameterColumn[1]} != {lastUpdateOptional} ";
+                    parameterCondition = $"{listParameterColumn[0]} > TO_TIMESTAMP('{lastUpdate}', 'DD-Mon-RR HH24:MI:SS.FF3') AND {listParameterColumn[1]} > {lastUpdateOptional} ";
 
                     break;
 
@@ -230,6 +230,7 @@ namespace WorkerService1
                             break;
                     }
                     _logger.Info($"_____________  INSERTED SUCCESSFULLY  ______________\nINSERTED AT : {DateTime.Now}\nPARAMETER UPDATED : {lastUpdate} | {lastUpdateOptional}");
+                    _loggerFile.LogInformation($"_____________  INSERTED SUCCESSFULLY  ______________\nINSERTED AT : {DateTime.Now}\nPARAMETER UPDATED : {lastUpdate} | {lastUpdateOptional}");
                     listData = "";     
                     }
                     catch (SqlException ex)

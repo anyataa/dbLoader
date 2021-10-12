@@ -15,11 +15,13 @@ namespace WorkerService1
         private readonly Transaction transaction;
 
 
-        public Worker( IConfiguration configuration)
+
+        public Worker( IConfiguration configuration, ILogger<Worker> logger)
         {
            
-            transaction = new Transaction( configuration);
+            transaction = new Transaction( configuration, logger);
             _configuration = configuration;
+           
         }
 
         protected override async Task ExecuteAsync(CancellationToken stoppingToken)
