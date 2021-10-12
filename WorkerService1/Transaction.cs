@@ -35,16 +35,7 @@ namespace WorkerService1
 
         }
 
-     
-        //private List<string> returnParameterColumnName(int parameterNumber) {
-
-        //    return new List<string> 
-        //    { 
-        //        _configuration[$"DataConfig:ParameterColumn1.{parameterNumber}"],
-        //        _configuration[$"DataConfig:ParameterColumn2.{parameterNumber}"]
-        //    };
-        //}
-
+    
         public async Task mapMessageConfig()
         {
 
@@ -53,13 +44,7 @@ namespace WorkerService1
             sqlReaderCon.ConnectionString = dataBase.returnSqlDB();
             sqlInsertCon.ConnectionString = dataBase.returnSqlDB();
 
-            //parameterTable.getParameterColumnName(parameterTable.returnParameterType("DBLOADER"), "DBLOADER").ForEach(delegate (string item)
-            //{
-            //    _logger.Info(item);
-            //});
-
-
-            //for (int i = 1; i <= dataBase.returnTotalDb(); i++)
+       
                 for (int i = 1; i <= 1; i++)
                 {
                     _logger.Info($"___________  Start processing from BU : {dataBase.returnBU(i)} ________\n");

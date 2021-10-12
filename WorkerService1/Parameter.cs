@@ -137,33 +137,31 @@ namespace WorkerService1
             switch (parameter)
             {
                 case "TIMESTAMP_ONLY":
-                    setParameter = $"SET VAL_PARAM01 = CAST('{paramValue}' AS Datetime2)";
-                    //setParameter = $"sp_UpdateParamTimestamp '{paramValue}', '{dataBase.returnBU(numberBU)}'";
+                    setParameter = $"sp_UpdateParamTimestamp '{paramValue}', '{dataBase.returnBU(numberBU)}'";
                     break;
 
                 case "ID_ONLY":
-                    setParameter = $"SET VAL_PARAM02 = {paramValue})";
-                    //setParameter = $"sp_UpdateParamTimestamp {paramValue}";
+                    //setParameter = $"SET VAL_PARAM02 = {paramValue})";
+                    setParameter = $"sp_UpdateParamID {paramValue},  '{dataBase.returnBU(numberBU)}'";
                     break;
 
                 case "TIMESTAMP_ID":
-                    setParameter = $"SET VAL_PARAM01 = CAST('{paramValue}' AS Datetime2) , VAL_PARAM02 = {paramValueOptional}";
+                    setParameter = $"sp_UpdateParamTimestampAndId '{paramValue}' ,{paramValueOptional},  '{dataBase.returnBU(numberBU)}' ";
                     break;
 
                 case "TIMESTAMP_NOMINAL":
-                    setParameter = $"SET VAL_PARAM01 = CAST('{paramValue}' AS Datetime2) , VAL_PARAM03 = {paramValueOptional}";
+                    setParameter = $"sp_UpdateParamTimestampAndNominal '{paramValue}', {paramValueOptional},  '{dataBase.returnBU(numberBU)}'";
                     break;
 
                 case "ID_NOMINAL":
-                    setParameter = $"SET VAL_PARAM02 = {paramValue}, VAL_PARAM03 = {paramValueOptional}";
+                    setParameter = $"sp_UpdateParamIdAndNominal {paramValue},  {paramValueOptional},  '{dataBase.returnBU(numberBU)}'";
                     break;
             }
 
 
-            string updateCmdSql = @$"UPDATE {parameter_table} 
-             {setParameter} WHERE BU = '{dataBase.returnBU(numberBU)}'";
+          
+            SqlCommand cmd = new SqlCommand(setParameter, sqlInsertCon);
 
-            SqlCommand cmd = new SqlCommand(updateCmdSql, sqlInsertCon);
             StringBuilder errorMessages = new StringBuilder();
             try
             {
@@ -189,9 +187,9 @@ namespace WorkerService1
         public List<string> getParam(int numberBU, string parameter)
         {
             sqlReaderCon.ConnectionString = dataBase.returnSqlDB();
-            //string parameter_table = _configuration["DataConfig:ParamTableName"];
+          
             StringBuilder errorMessages = new StringBuilder();
-            //string setParameter = "";
+      
             string getCmdSql = "";
             List<string> lastUpdate = new List<string>();
 
